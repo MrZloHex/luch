@@ -6,6 +6,8 @@ import (
 	"github.com/lmittmann/tint"
 	log "log/slog"
 
+	"github.com/joho/godotenv"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -16,7 +18,15 @@ func main() {
 		}),
 	))
 
-	bot, err := tgbotapi.NewBotAPI("")
+	godotenv.Load()
+	
+	token := os.Getenv("TELEGRAM_TOKEN")
+	if token == "" {
+		log.Error("Failed to get TOKEN");
+		os.Exit(1);
+	}
+
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Error("Failed to init bot", "err", err)
 	}
