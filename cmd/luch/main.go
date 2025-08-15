@@ -32,9 +32,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	ptcl_cfg := protocol.PtclConfig{
+		Shard:  "LUCH",
+		Url:    "ws://localhost:8092",
+		Reconn: 5,
+	}
 
-
-	ptcl, err := protocol.NewProtocol("LUCH", "ws://localhost:8092")
+	ptcl, err := protocol.NewProtocol(ptcl_cfg)
 	if err != nil {
 		slog.Error("Failed to init protocol")
 		os.Exit(1)
@@ -51,10 +55,13 @@ func main() {
 		slog.Error("Failed to init bot", "err", err)
 	}
 
-	slog.Info("BOOTING UP ON", "bot", bot.GetName())
+	slog.Info("BOOTING UP", "bot", bot.GetName(), "url", ptcl_cfg.Url)
+
+	bot.Setup()
 
 	go ptcl.Run()
 	go bot.Run()
 
-	for {}
+	for {
+	}
 }

@@ -6,6 +6,8 @@ import (
 	log "log/slog"
 
 	"luch/pkg/protocol"
+
+	"time"
 )
 
 type BotConfig struct {
@@ -18,6 +20,9 @@ type Bot struct {
 	api *tgbotapi.BotAPI
 
 	ptcl *protocol.Protocol
+
+	cmds   Commands
+	kb     Keyboard
 }
 
 func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
@@ -42,21 +47,33 @@ func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
 	return &bot, nil
 }
 
+func (bot *Bot) Setup() {
+	err := bot.fetchCommands()
+	if err != nil {
+		log.Error("Failed to retrive commads", "err", err)
+	}
+	log.Debug("Commands from Telegram", "cmd", bot.cmds)
+
+	bot.setupKeyboard()
+}
+
 func (bot *Bot) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates := bot.api.GetUpdatesChan(u)
 
+	time.Sleep(time.Millisecond * 500)
+	updates.Clear()
+
 	for update := range updates {
-		if update.Message != nil {
-			log.Info("Got msg", "from", update.Message.From.UserName, "text", update.Message.Text)
+		if update.Message == nil {
+			continue
+		}
+		log.Debug("Got smth", "from", update.Message.From.UserName, "text", update.Message.Text)
 
-			bot.ptcl.Write("VERTEX", update.Message.Text)
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.api.Send(msg)
+		if update.Message.IsCommand() {
+			bot.processCmd(update)
 		}
 	}
 }
