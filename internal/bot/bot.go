@@ -21,8 +21,8 @@ type Bot struct {
 
 	ptcl *protocol.Protocol
 
-	cmds   Commands
-	kb     Keyboard
+	cmds Commands
+	kb   Keyboard
 }
 
 func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
@@ -72,9 +72,17 @@ func (bot *Bot) Run() {
 		}
 		log.Debug("Got smth", "from", update.Message.From.UserName, "text", update.Message.Text)
 
-		if update.Message.IsCommand() {
+		switch {
+		case update.Message.IsCommand():
 			bot.processCmd(update)
+		case bot.isKeyboard(update):
+			bot.proccessKeyboard(update)
+		default:
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "No such thingy, sorry\nIf you implement it or contact developer\nSee /help")
+			bot.api.Send(msg)
+
 		}
+
 	}
 }
 

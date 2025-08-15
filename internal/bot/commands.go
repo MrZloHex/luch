@@ -44,18 +44,18 @@ func (bot *Bot) fetchCommands() error {
 	return nil
 }
 
-func (bot *Bot) processCmd(upd tgbotapi.Update) {
+func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
 
 	switch upd.Message.Command() {
 	case "start":
 		msg.Text = "Welcome to *LUCH*! Luch is bot for monlith system.\nUse /help to see commands."
-		msg.ReplyMarkup = bot.kb
+		msg.ReplyMarkup = bot.kb.kb
 	case "help":
 		msg.Text = bot.buildHelp()
 	case "menu":
 		msg.Text = "Here’s the menu:"
-		msg.ReplyMarkup = bot.kb
+		msg.ReplyMarkup = bot.kb.kb
 	case "hide":
 		msg.Text = "Keyboard hidden."
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
@@ -63,11 +63,13 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) {
 		msg.Text = "Notification is under construction"
 		log.Warn("Users wants notification")
 	default:
+		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())
-		return
+		return nil
 	}
 
-	bot.api.Send(msg)
+	_, err := bot.api.Send(msg)
+	return err
 }
 
 func (bot *Bot) buildHelp() string {
