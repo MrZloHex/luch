@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	log "log/slog"
 	"time"
 
@@ -28,9 +29,20 @@ func NewProtocol(name string, url string) (*Protocol, error) {
 	}
 	ptcl.conn = conn
 
-	go ptcl.read()
-
 	return &ptcl, nil
+}
+
+func (ptcl *Protocol) Run() {
+	ptcl.read()
+}
+
+func (ptcl *Protocol) Write(to string, payload string) error {
+	packet := []byte(fmt.Sprintf("%s:%s:%s", to, payload, ptcl.shard))
+	err := ptcl.conn.WriteMessage(ws.TextMessage, packet)
+	if err != nil {
+		log.Error("Failed to write", "err", err)
+	}
+	return err
 }
 
 func (ptcl *Protocol) read() {
@@ -44,7 +56,7 @@ func (ptcl *Protocol) read() {
 				log.Warn("Connection closed", "err", err)
 				break
 			} else {
-			    log.Error("Failed to read", "err", err)
+				log.Error("Failed to read", "err", err)
 			}
 		}
 
@@ -58,7 +70,7 @@ func (ptcl *Protocol) tryReconn() {
 	log.Warn("Trying to reconnect on", "url", ptcl.url)
 
 	for {
-		conn, _, err := ws.DefaultDialer.Dial(ptcl.url, nil);
+		conn, _, err := ws.DefaultDialer.Dial(ptcl.url, nil)
 		if err == nil {
 			ptcl.conn = conn
 			break

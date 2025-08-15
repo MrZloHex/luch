@@ -9,9 +9,9 @@ import (
 
 	"github.com/joho/godotenv"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-
 	"luch/pkg/protocol"
+
+	"luch/internal/bot"
 )
 
 func main() {
@@ -32,36 +32,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(token)
-	if err != nil {
-		slog.Error("Failed to init bot", "err", err)
-	}
-	tgbotapi.SetLogger(stdToSlog)
 
-	// bot.Debug = true
 
 	ptcl, err := protocol.NewProtocol("LUCH", "ws://localhost:8092")
 	if err != nil {
 		slog.Error("Failed to init protocol")
-		os.Exit(1);
+		os.Exit(1)
 	}
-	_ = ptcl;
 
-	slog.Info("BOOTING UP ON", "bot", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil {
-			slog.Info("Got msg", "from", update.Message.From.UserName, "text", update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
-		}
+	cfg := bot.BotConfig{
+		Token:  token,
+		Debug:  false,
+		Logger: stdToSlog,
 	}
+
+	bot, err := bot.NewBot(cfg, ptcl)
+	if err != nil {
+		slog.Error("Failed to init bot", "err", err)
+	}
+
+	slog.Info("BOOTING UP ON", "bot", bot.GetName())
+
+	go ptcl.Run()
+	go bot.Run()
+
+	for {}
 }
