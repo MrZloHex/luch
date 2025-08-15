@@ -43,7 +43,11 @@ func (ptcl *Protocol) Run() {
 	}
 }
 
-func (ptcl *Protocol) Write(to string, payload string) error {
+func (ptcl *Protocol) Send(to, payload string) error {
+	return ptcl.write(to, payload)
+}
+
+func (ptcl *Protocol) write(to string, payload string) error {
 	packet := []byte(fmt.Sprintf("%s:%s:%s", to, payload, ptcl.cfg.Shard))
 	err := ptcl.conn.WriteMessage(ws.TextMessage, packet)
 	if err != nil {

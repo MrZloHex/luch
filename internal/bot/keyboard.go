@@ -39,11 +39,15 @@ func (bot *Bot) isKeyboard(upd tgbotapi.Update) bool {
 func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
 
-	switch upd.Message.Command() {
+	switch upd.Message.Text {
 	case "Lamp On":
+		bot.ptcl.Send("VERTEX", "LAMP:ON")
 	case "Lamp Off":
+		bot.ptcl.Send("VERTEX", "LAMP:OFF")
 	case "Led Off":
+		bot.ptcl.Send("VERTEX", "LED:OFF")
 	case "Next Effect":
+		bot.ptcl.Send("VERTEX", "LED:NEXT")
 	default:
 		msg.Text = "Unknown msg"
 		log.Warn("Unknown msg", "msg", upd.Message.Command())
