@@ -59,6 +59,15 @@ func main() {
 
 	bot.Setup()
 
+	bot.NotifyAll("Bot started")
+
+	ptcl.OnDisconnect(func() {
+		bot.NotifyAll("Disconnected from server")
+	})
+	ptcl.OnConnect(func() {
+		bot.NotifyAll("Connected to server")
+	})
+
 	go ptcl.Run()
 	go bot.Run()
 

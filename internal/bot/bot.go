@@ -23,6 +23,7 @@ type Bot struct {
 
 	cmds Commands
 	kb   Keyboard
+	not  Notifier
 }
 
 func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
@@ -48,6 +49,8 @@ func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
 }
 
 func (bot *Bot) Setup() {
+	bot.setupNotifier()
+
 	err := bot.fetchCommands()
 	if err != nil {
 		log.Error("Failed to retrive commads", "err", err)

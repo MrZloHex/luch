@@ -60,8 +60,8 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		msg.Text = "Keyboard hidden."
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 	case "notify":
-		msg.Text = "Notification is under construction"
-		log.Warn("Users wants notification")
+		msg.Text = bot.toggleNotify(upd.Message.Chat.ID)
+		bot.saveNotifiers()
 	default:
 		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())

@@ -17,6 +17,9 @@ type PtclConfig struct {
 type Protocol struct {
 	cfg  PtclConfig
 	conn *ws.Conn
+
+	onDisconnect func()
+	onConnect    func()
 }
 
 func NewProtocol(cfg PtclConfig) (*Protocol, error) {
@@ -42,6 +45,9 @@ func (ptcl *Protocol) Run() {
 		ptcl.tryReconn()
 	}
 }
+
+func (ptcl *Protocol) OnDisconnect(f func()) { ptcl.onDisconnect = f }
+func (ptcl *Protocol) OnConnect(f func())    { ptcl.onConnect = f }
 
 func (ptcl *Protocol) Send(to, payload string) error {
 	return ptcl.write(to, payload)
@@ -70,6 +76,10 @@ func (ptcl *Protocol) read() {
 
 		log.Info("Got msg", "msg", string(msg))
 	}
+
+	if ptcl.onDisconnect != nil {
+		ptcl.onDisconnect()
+	}
 }
 
 func (ptcl *Protocol) tryReconn() {
@@ -86,5 +96,8 @@ func (ptcl *Protocol) tryReconn() {
 		time.Sleep(time.Second * time.Duration(ptcl.cfg.Reconn))
 	}
 
+	if ptcl.onConnect != nil {
+		ptcl.onConnect()
+	}
 	log.Info("Succefully reconnected")
 }
