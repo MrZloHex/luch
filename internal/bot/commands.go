@@ -16,6 +16,7 @@ var def_cmds = Commands{
 	{Command: "menu", Description: "Show reply keyboard"},
 	{Command: "hide", Description: "Hide reply keyboard"},
 	{Command: "notify", Description: "Toggle notification for me"},
+	{Command: "send", Description: "Send command to bus"},
 }
 
 func (bot *Bot) fetchCommands() error {
@@ -62,10 +63,17 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 	case "notify":
 		msg.Text = bot.toggleNotify(upd.Message.Chat.ID)
 		bot.saveNotifiers()
+	case "send":
+		args := strings.Split(upd.Message.CommandArguments(), " ")
+		if len(args) != 2 {
+			msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
+		} else {
+			msg.Text = fmt.Sprintf("Sending `%s` to `%s`", args[1], args[0])
+			bot.ptcl.Send(args[0], args[1])
+		}
 	default:
 		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())
-		return nil
 	}
 
 	_, err := bot.api.Send(msg)

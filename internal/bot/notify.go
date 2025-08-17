@@ -2,7 +2,6 @@ package bot
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"sync"
 
