@@ -68,8 +68,7 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		if len(args) != 2 {
 			msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
 		} else {
-			msg.Text = fmt.Sprintf("Sending `%s` to `%s`", args[1], args[0])
-			bot.ptcl.Send(args[0], args[1])
+			msg.Text = bot.SendReq(args[0], args[1])
 		}
 	default:
 		msg.Text = "Unknown command"

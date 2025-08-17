@@ -1,9 +1,11 @@
 package bot
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"fmt"
 	stdlog "log"
 	log "log/slog"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"luch/pkg/protocol"
 
@@ -25,6 +27,8 @@ type Bot struct {
 	cmds Commands
 	kb   Keyboard
 	not  Notifier
+
+
 }
 
 func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
@@ -62,6 +66,15 @@ func (bot *Bot) Setup() {
 	log.Debug("Commands from Telegram", "cmd", bot.cmds)
 
 	bot.setupKeyboard()
+}
+
+func (bot *Bot) SendReq(to, pay string) string {
+	resp, err := bot.ptcl.Send(to, pay)
+	if err != nil {
+		return fmt.Sprintf("Failed to send request: %s", err.Error)
+	} else {
+		return string(resp)
+	}
 }
 
 func (bot *Bot) Run() {

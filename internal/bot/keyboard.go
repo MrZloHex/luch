@@ -41,13 +41,13 @@ func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
 
 	switch upd.Message.Text {
 	case "Lamp On":
-		bot.ptcl.Send("VERTEX", "LAMP:ON")
+		msg.Text = bot.SendReq("VERTEX", "LAMP:ON")
 	case "Lamp Off":
-		bot.ptcl.Send("VERTEX", "LAMP:OFF")
+		msg.Text = bot.SendReq("VERTEX", "LAMP:OFF")
 	case "Led Off":
-		bot.ptcl.Send("VERTEX", "LED:OFF")
+		msg.Text = bot.SendReq("VERTEX", "LED:OFF")
 	case "Next Effect":
-		bot.ptcl.Send("VERTEX", "LED:NEXT")
+		msg.Text = bot.SendReq("VERTEX", "LED:NEXT")
 	default:
 		msg.Text = "Unknown msg"
 		log.Warn("Unknown msg", "msg", upd.Message.Command())

@@ -18,6 +18,8 @@ type Protocol struct {
 	cfg  PtclConfig
 	conn *ws.Conn
 
+	resp chan []byte
+
 	onDisconnect func()
 	onConnect    func()
 }
@@ -27,6 +29,7 @@ func NewProtocol(cfg PtclConfig) (*Protocol, error) {
 
 	ptcl := Protocol{
 		cfg: cfg,
+		resp: make(chan []byte),
 	}
 
 	conn, _, err := ws.DefaultDialer.Dial(cfg.Url, nil)
@@ -49,8 +52,12 @@ func (ptcl *Protocol) Run() {
 func (ptcl *Protocol) OnDisconnect(f func()) { ptcl.onDisconnect = f }
 func (ptcl *Protocol) OnConnect(f func())    { ptcl.onConnect = f }
 
-func (ptcl *Protocol) Send(to, payload string) error {
-	return ptcl.write(to, payload)
+func (ptcl *Protocol) Send(to, payload string) ([]byte, error) {
+	err := ptcl.write(to, payload)
+	if err != nil {
+		return nil, err
+	}
+	return <- ptcl.resp, nil
 }
 
 func (ptcl *Protocol) write(to string, payload string) error {
@@ -71,10 +78,12 @@ func (ptcl *Protocol) read() {
 				break
 			} else {
 				log.Error("Failed to read", "err", err)
+				continue
 			}
 		}
 
 		log.Info("Got msg", "msg", string(msg))
+		ptcl.resp <- msg
 	}
 
 	if ptcl.onDisconnect != nil {
