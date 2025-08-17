@@ -14,6 +14,7 @@ type BotConfig struct {
 	Token  string
 	Debug  bool
 	Logger *stdlog.Logger
+	Notify string
 }
 
 type Bot struct {
@@ -31,6 +32,9 @@ func NewBot(cfg BotConfig, ptcl *protocol.Protocol) (*Bot, error) {
 
 	bot := Bot{
 		ptcl: ptcl,
+		not: Notifier{
+			notifyFile: cfg.Notify,
+		},
 	}
 
 	api, err := tgbotapi.NewBotAPI(cfg.Token)

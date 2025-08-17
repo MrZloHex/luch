@@ -2,6 +2,7 @@ package bot
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"sync"
 
@@ -9,11 +10,10 @@ import (
 	log "log/slog"
 )
 
-const notifyFile = "notify.json"
-
 type Notifier struct {
-	notifiers map[int64]struct{}
-	notifyMu  sync.RWMutex
+	notifiers  map[int64]struct{}
+	notifyMu   sync.RWMutex
+	notifyFile string
 }
 
 func (bot *Bot) setupNotifier() error {
@@ -22,7 +22,7 @@ func (bot *Bot) setupNotifier() error {
 
 	bot.not.notifiers = make(map[int64]struct{})
 
-	data, err := os.ReadFile(notifyFile)
+	data, err := os.ReadFile(bot.not.notifyFile)
 	if err != nil {
 		log.Error("Failed to read notifiers", "err", err)
 		return err
@@ -54,7 +54,7 @@ func (bot *Bot) saveNotifiers() error {
 		log.Error("Failed to marshal notify file", "err", err)
 		return err
 	}
-	if err := os.WriteFile(notifyFile, data, 0644); err != nil {
+	if err := os.WriteFile(bot.not.notifyFile, data, 0644); err != nil {
 		log.Error("Failed to write notify file", "err", err)
 		return err
 	}

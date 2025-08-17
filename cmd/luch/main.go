@@ -7,16 +7,31 @@ import (
 	"log"
 	"log/slog"
 
+	cli "github.com/spf13/pflag"
+
 	"github.com/joho/godotenv"
 
-	"luch/pkg/protocol"
-
 	"luch/internal/bot"
+	"luch/pkg/protocol"
 )
 
+var logLevelMap = map[string]slog.Level{
+	"debug": slog.LevelDebug,
+	"info":  slog.LevelInfo,
+	"warn":  slog.LevelWarn,
+	"error": slog.LevelError,
+}
+
 func main() {
+	envFile := cli.StringP("env", "e", ".env", "Env file path")
+	url := cli.StringP("url", "u", "ws://localhost:8092", "Url of hub")
+	logLevel := cli.StringP("log", "l", "info", "Log level")
+	notifier := cli.StringP("json", "j", "notify.json", "Path to JSON where locate chat id for notification")
+	botDebug := cli.Bool("bot-debug", false, "Enable debug output for bot")
+	cli.Parse()
+
 	log_handler := tint.NewHandler(os.Stdout, &tint.Options{
-		Level: slog.LevelDebug,
+		Level: logLevelMap[*logLevel],
 	})
 	slog.SetDefault(slog.New(log_handler))
 
@@ -24,7 +39,7 @@ func main() {
 	log.SetFlags(0)
 	log.SetOutput(stdToSlog.Writer())
 
-	godotenv.Load()
+	godotenv.Load(*envFile)
 
 	token := os.Getenv("TELEGRAM_TOKEN")
 	if token == "" {
@@ -34,7 +49,7 @@ func main() {
 
 	ptcl_cfg := protocol.PtclConfig{
 		Shard:  "LUCH",
-		Url:    "ws://localhost:8092",
+		Url:    *url,
 		Reconn: 5,
 	}
 
@@ -46,8 +61,9 @@ func main() {
 
 	cfg := bot.BotConfig{
 		Token:  token,
-		Debug:  false,
+		Debug:  *botDebug,
 		Logger: stdToSlog,
+		Notify: *notifier,
 	}
 
 	bot, err := bot.NewBot(cfg, ptcl)
@@ -58,7 +74,6 @@ func main() {
 	slog.Info("BOOTING UP", "bot", bot.GetName(), "url", ptcl_cfg.Url)
 
 	bot.Setup()
-
 	bot.NotifyAll("Bot started")
 
 	ptcl.OnDisconnect(func() {
