@@ -39,9 +39,10 @@ func (bot *Bot) isKeyboard(upd tgbotapi.Update) bool {
 func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
 	log.Debug("CALLBACK")
 
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
+	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
 	msg.Text = bot.SendReq(upd.CallbackData())
 	_, err := bot.api.Send(msg)
+	bot.api.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
 	return err
 }
 
@@ -52,10 +53,10 @@ func (bot *Bot) makeKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 		kb = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Next Effect", "VERTEX:NEXT:EFFECT"),
-				tgbotapi.NewInlineKeyboardButtonData("Led Off", "VERTEX:LED:OFF"),
+				tgbotapi.NewInlineKeyboardButtonData("Lamp On", "VERTEX:LAMP:ON"),
 			),
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Lamp On", "VERTEX:LAMP:ON"),
+				tgbotapi.NewInlineKeyboardButtonData("Led Off", "VERTEX:LED:OFF"),
 				tgbotapi.NewInlineKeyboardButtonData("Lamp Off", "VERTEX:LAMP:OFF"),
 			),
 		)
