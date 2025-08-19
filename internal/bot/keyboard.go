@@ -13,30 +13,15 @@ type Keyboard struct {
 func (bot *Bot) setupKeyboard() {
 	bot.kb.kb = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Next Effect"),
-			tgbotapi.NewKeyboardButton("Lamp On"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Led Off"),
-			tgbotapi.NewKeyboardButton("Lamp Off"),
+			tgbotapi.NewKeyboardButton("/vertex"),
 		),
 	)
-	bot.kb.labels = map[string]struct{}{
-		"Lamp On":     {},
-		"Lamp Off":    {},
-		"Led Off":     {},
-		"Next Effect": {},
-	}
 	bot.kb.kb.ResizeKeyboard = true
 	bot.kb.kb.OneTimeKeyboard = false
 }
 
-func (bot *Bot) isKeyboard(upd tgbotapi.Update) bool {
-	_, ok := bot.kb.labels[upd.Message.Text]
-	return ok
-}
 
-func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
+func (bot *Bot) proccessInlineKeyboard(upd tgbotapi.Update) error {
 	log.Debug("CALLBACK")
 
 	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
@@ -46,7 +31,7 @@ func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
 	return err
 }
 
-func (bot *Bot) makeKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
+func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 	var kb tgbotapi.InlineKeyboardMarkup
 	switch to {
 	case "vertex":

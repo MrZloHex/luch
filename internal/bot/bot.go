@@ -88,12 +88,13 @@ func (bot *Bot) Run() {
 
 	for update := range updates {
 		if update.CallbackQuery != nil {
-			bot.proccessKeyboard(update)
+			bot.proccessInlineKeyboard(update)
 		}
 
 		if update.Message == nil {
 			continue
 		}
+
 		log.Debug("Got smth", "from", update.Message.From.UserName, "text", update.Message.Text)
 
 		switch {

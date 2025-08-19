@@ -73,7 +73,7 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		}
 	case "vertex":
 		msg.Text = "Commands for vertex:"
-		msg.ReplyMarkup = bot.makeKeyboard("vertex")
+		msg.ReplyMarkup = bot.makeInlineKeyboard("vertex")
 	default:
 		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())
