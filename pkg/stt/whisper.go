@@ -66,12 +66,12 @@ func (t *Transcriber) Close() error {
 
 // pcm16k must be mono @ 16 kHz, float32 in [-1, 1]
 func (t *Transcriber) TranscribePCM(ctx context.Context, pcm16k []float32, opt Options) (Result, error) {
-	    if t.model == nil {
-        return Result{}, errors.New("nil model")
-    }
-    if len(pcm16k) == 0 {
-        return Result{}, errors.New("no audio samples provided")
-    }
+	if t.model == nil {
+		return Result{}, errors.New("nil model")
+	}
+	if len(pcm16k) == 0 {
+		return Result{}, errors.New("no audio samples provided")
+	}
 
 	wctx, err := t.model.NewContext()
 	if err != nil {

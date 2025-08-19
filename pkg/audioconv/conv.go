@@ -3,6 +3,7 @@ package audioconv
 import (
 	log "log/slog"
 
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"bufio"
 
 	"github.com/go-audio/wav"
 	"github.com/hajimehoshi/go-mp3"
@@ -74,7 +74,6 @@ func ConvertFileToPCM16k(_ context.Context, path string, opt Options) ([]float32
 		}
 	}
 }
-
 
 func decodeWAVTo16k(r io.ReadSeeker, opt Options) ([]float32, error) {
 	dec := wav.NewDecoder(r)
@@ -148,9 +147,9 @@ func decodeMP3To16k(r io.Reader, opt Options) ([]float32, error) {
 
 func decodeOggVorbisTo16k(r io.Reader, opt Options) ([]float32, error) {
 	pcm, fmt, err := oggvorbis.ReadAll(r)
-    if err != nil {
+	if err != nil {
 		return nil, err
-    }
+	}
 	if fmt == nil || fmt.Channels <= 0 || fmt.SampleRate <= 0 {
 		return nil, errors.New("invalid ogg/vorbis stream")
 	}
@@ -235,8 +234,6 @@ func decodeOggOpusTo16k(r io.Reader, opt Options) ([]float32, error) {
 	}
 	return out, nil
 }
-
-
 
 // helpers
 

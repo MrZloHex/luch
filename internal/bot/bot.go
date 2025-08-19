@@ -104,7 +104,6 @@ func downloadFile(url string, dst string) error {
 	return err
 }
 
-
 func (bot *Bot) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -172,7 +171,7 @@ func (bot *Bot) Run() {
 
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Converting")
 		bot.api.Send(msg)
-		
+
 		pcm, err := audioconv.ConvertFileToPCM16k(context.Background(), srcPath, audioconv.Options{})
 		if err != nil {
 			log.Error("convert audio: %v", err)
@@ -184,7 +183,6 @@ func (bot *Bot) Run() {
 			os.Remove(wavPath)
 			os.Remove(wavPath + ".txt")
 		}()
-
 
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Recognition")
 		bot.api.Send(msg)
@@ -198,14 +196,14 @@ func (bot *Bot) Run() {
 		res, err := tr.TranscribePCM(context.Background(), pcm, stt.Options{
 			Language:        "auto",
 			TranslateToEn:   false,
-			Threads:         0,            // auto (NumCPU)
+			Threads:         0, // auto (NumCPU)
 			TokenTimestamps: false,
 			MaxSegmentChars: 0,
 			MaxTokens:       0,
-			BeamSize:        0,        // >0 enables beam search
+			BeamSize:        0, // >0 enables beam search
 			// Optional slicing:
-			Offset:   0 * time.Second,     // start at 0
-			Duration: 0,                    // full length
+			Offset:   0 * time.Second, // start at 0
+			Duration: 0,               // full length
 		})
 		if err != nil {
 			log.Error("transcribe: %v", err)
