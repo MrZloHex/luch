@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	log "log/slog"
+	"strings"
 	"time"
 
 	ws "github.com/gorilla/websocket"
@@ -52,16 +53,18 @@ func (ptcl *Protocol) Run() {
 func (ptcl *Protocol) OnDisconnect(f func()) { ptcl.onDisconnect = f }
 func (ptcl *Protocol) OnConnect(f func())    { ptcl.onConnect = f }
 
-func (ptcl *Protocol) Send(to, payload string) ([]byte, error) {
-	err := ptcl.write(to, payload)
+
+func (ptcl *Protocol) Send(parts ...string) ([]byte, error) {
+	pay := strings.Join(parts, ":")
+	err := ptcl.write(fmt.Sprintf("%s:%s", pay, ptcl.cfg.Shard))
 	if err != nil {
 		return nil, err
 	}
 	return <-ptcl.resp, nil
 }
 
-func (ptcl *Protocol) write(to string, payload string) error {
-	packet := []byte(fmt.Sprintf("%s:%s:%s", to, payload, ptcl.cfg.Shard))
+func (ptcl *Protocol) write(payload string) error {
+	packet := []byte(payload)
 	err := ptcl.conn.WriteMessage(ws.TextMessage, packet)
 	if err != nil {
 		log.Error("Failed to write", "err", err)

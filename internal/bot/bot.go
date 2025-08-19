@@ -75,10 +75,10 @@ func (bot *Bot) Setup() {
 	bot.setupKeyboard()
 }
 
-func (bot *Bot) SendReq(to, pay string) string {
-	resp, err := bot.ptcl.Send(to, pay)
+func (bot *Bot) SendReq(parts ...string) string {
+	resp, err := bot.ptcl.Send(parts...)
 	if err != nil {
-		return fmt.Sprintf("Failed to send request: %s", err.Error)
+		return fmt.Sprintf("Failed to send request: %s", err.Error())
 	} else {
 		return string(resp)
 	}
@@ -156,17 +156,19 @@ func (bot *Bot) Run() {
 	updates.Clear()
 
 	for update := range updates {
+		if update.CallbackQuery != nil {
+			bot.proccessInlineKeyboard(update)
+		}
+
 		if update.Message == nil {
 			continue
 		}
+
 		log.Debug("Got smth", "from", update.Message.From.UserName, "text", update.Message.Text)
 
 		switch {
 		case update.Message.IsCommand():
 			bot.processCmd(update)
-			continue
-		case bot.isKeyboard(update):
-			bot.proccessKeyboard(update)
 			continue
 		default:
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "No such thingy, sorry\nIf you implement it or contact developer\nSee /help")

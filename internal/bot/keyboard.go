@@ -13,47 +13,40 @@ type Keyboard struct {
 func (bot *Bot) setupKeyboard() {
 	bot.kb.kb = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Next Effect"),
-			tgbotapi.NewKeyboardButton("Lamp On"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Led Off"),
-			tgbotapi.NewKeyboardButton("Lamp Off"),
+			tgbotapi.NewKeyboardButton("/vertex"),
 		),
 	)
-	bot.kb.labels = map[string]struct{}{
-		"Lamp On":     {},
-		"Lamp Off":    {},
-		"Led Off":     {},
-		"Next Effect": {},
-	}
 	bot.kb.kb.ResizeKeyboard = true
 	bot.kb.kb.OneTimeKeyboard = false
 }
 
-func (bot *Bot) isKeyboard(upd tgbotapi.Update) bool {
-	_, ok := bot.kb.labels[upd.Message.Text]
-	return ok
-}
 
-func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
+func (bot *Bot) proccessInlineKeyboard(upd tgbotapi.Update) error {
+	log.Debug("CALLBACK")
 
-	switch upd.Message.Text {
-	case "Lamp On":
-		msg.Text = bot.SendReq("VERTEX", "LAMP:ON")
-	case "Lamp Off":
-		msg.Text = bot.SendReq("VERTEX", "LAMP:OFF")
-	case "Led Off":
-		msg.Text = bot.SendReq("VERTEX", "LED:OFF")
-	case "Next Effect":
-		msg.Text = bot.SendReq("VERTEX", "LED:NEXT")
-	default:
-		msg.Text = "Unknown msg"
-		log.Warn("Unknown msg", "msg", upd.Message.Command())
-		return nil
-	}
-
+	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
+	msg.Text = bot.SendReq(upd.CallbackData())
 	_, err := bot.api.Send(msg)
+	bot.api.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
 	return err
 }
+
+func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
+	var kb tgbotapi.InlineKeyboardMarkup
+	switch to {
+	case "vertex":
+		kb = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Next Effect", "VERTEX:NEXT:EFFECT"),
+				tgbotapi.NewInlineKeyboardButtonData("Lamp On", "VERTEX:LAMP:ON"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Led Off", "VERTEX:LED:OFF"),
+				tgbotapi.NewInlineKeyboardButtonData("Lamp Off", "VERTEX:LAMP:OFF"),
+			),
+		)
+	}
+
+	return kb
+}
+
