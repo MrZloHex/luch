@@ -2,7 +2,6 @@ package bot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	log "log/slog"
 )
 
 type Keyboard struct {
@@ -20,15 +19,6 @@ func (bot *Bot) setupKeyboard() {
 	bot.kb.kb.OneTimeKeyboard = false
 }
 
-func (bot *Bot) proccessInlineKeyboard(upd tgbotapi.Update) error {
-	log.Debug("CALLBACK")
-
-	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
-	msg.Text = bot.SendReq(upd.CallbackData())
-	_, err := bot.api.Send(msg)
-	bot.api.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
-	return err
-}
 
 func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 	var kb tgbotapi.InlineKeyboardMarkup
@@ -42,6 +32,16 @@ func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Led Off", "VERTEX:LED:OFF"),
 				tgbotapi.NewInlineKeyboardButtonData("Lamp Off", "VERTEX:LAMP:OFF"),
+			),
+		)
+	case "scriptorium":
+		kb = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("New Note", "VERTEX:NEXT:EFFECT"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Edit Note", "VERTEX:LED:OFF"),
+				tgbotapi.NewInlineKeyboardButtonData("Get Notes", "VERTEX:LAMP:OFF"),
 			),
 		)
 	}

@@ -6,6 +6,7 @@ import (
 	log "log/slog"
 	"luch/pkg/util"
 	"strings"
+	prgs "luch/internal/programmes"
 )
 
 type Commands []tgbotapi.BotCommand
@@ -18,6 +19,7 @@ var def_cmds = Commands{
 	{Command: "notify", Description: "Toggle notification for me"},
 	{Command: "send", Description: "Send command to bus"},
 	{Command: "vertex", Description: "Send commands to vertex"},
+	{Command: "notes", Description: "Manage your notes"},
 }
 
 func (bot *Bot) fetchCommands() error {
@@ -69,11 +71,16 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		if len(args) != 2 {
 			msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
 		} else {
-			msg.Text = bot.SendReq(args[0], args[1])
+			msg.Text = bot.SendWS(args[0], args[1])
 		}
+
 	case "vertex":
-		msg.Text = "Commands for vertex:"
-		msg.ReplyMarkup = bot.makeInlineKeyboard("vertex")
+		bot.prg.Set(prgs.PRG_VERTEX)
+		return nil
+	case "notes":
+		bot.prg.Set(prgs.PRG_SCRIPT)
+		return nil
+
 	default:
 		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())

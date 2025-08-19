@@ -1,8 +1,6 @@
 package audioconv
 
 import (
-	log "log/slog"
-
 	"bufio"
 	"bytes"
 	"context"
