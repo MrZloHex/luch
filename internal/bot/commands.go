@@ -17,6 +17,7 @@ var def_cmds = Commands{
 	{Command: "hide", Description: "Hide reply keyboard"},
 	{Command: "notify", Description: "Toggle notification for me"},
 	{Command: "send", Description: "Send command to bus"},
+	{Command: "vertex", Description: "Send commands to vertex"},
 }
 
 func (bot *Bot) fetchCommands() error {
@@ -70,6 +71,9 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		} else {
 			msg.Text = bot.SendReq(args[0], args[1])
 		}
+	case "vertex":
+		msg.Text = "Commands for vertex:"
+		msg.ReplyMarkup = bot.makeKeyboard("vertex")
 	default:
 		msg.Text = "Unknown command"
 		log.Warn("Unknown command", "cmd", upd.Message.Command())

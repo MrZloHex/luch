@@ -37,23 +37,30 @@ func (bot *Bot) isKeyboard(upd tgbotapi.Update) bool {
 }
 
 func (bot *Bot) proccessKeyboard(upd tgbotapi.Update) error {
+	log.Debug("CALLBACK")
+
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-
-	switch upd.Message.Text {
-	case "Lamp On":
-		msg.Text = bot.SendReq("VERTEX", "LAMP:ON")
-	case "Lamp Off":
-		msg.Text = bot.SendReq("VERTEX", "LAMP:OFF")
-	case "Led Off":
-		msg.Text = bot.SendReq("VERTEX", "LED:OFF")
-	case "Next Effect":
-		msg.Text = bot.SendReq("VERTEX", "LED:NEXT")
-	default:
-		msg.Text = "Unknown msg"
-		log.Warn("Unknown msg", "msg", upd.Message.Command())
-		return nil
-	}
-
+	msg.Text = bot.SendReq(upd.CallbackData())
 	_, err := bot.api.Send(msg)
 	return err
 }
+
+func (bot *Bot) makeKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
+	var kb tgbotapi.InlineKeyboardMarkup
+	switch to {
+	case "vertex":
+		kb = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Next Effect", "VERTEX:NEXT:EFFECT"),
+				tgbotapi.NewInlineKeyboardButtonData("Led Off", "VERTEX:LED:OFF"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Lamp On", "VERTEX:LAMP:ON"),
+				tgbotapi.NewInlineKeyboardButtonData("Lamp Off", "VERTEX:LAMP:OFF"),
+			),
+		)
+	}
+
+	return kb
+}
+
