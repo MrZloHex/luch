@@ -53,7 +53,6 @@ func (ptcl *Protocol) Run() {
 func (ptcl *Protocol) OnDisconnect(f func()) { ptcl.onDisconnect = f }
 func (ptcl *Protocol) OnConnect(f func())    { ptcl.onConnect = f }
 
-
 func (ptcl *Protocol) Send(parts ...string) ([]byte, error) {
 	pay := strings.Join(parts, ":")
 	err := ptcl.write(fmt.Sprintf("%s:%s", pay, ptcl.cfg.Shard))

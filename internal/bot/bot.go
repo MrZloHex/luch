@@ -8,17 +8,17 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"luch/pkg/protocol"
-	_ "luch/pkg/audio"
 
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"luch/pkg/audioconv"
+	"luch/pkg/stt"
 )
 
 type BotConfig struct {
@@ -104,47 +104,6 @@ func downloadFile(url string, dst string) error {
 	return err
 }
 
-func convertToWav(src string, dst string) error {
-	// 16 kHz mono PCM is fine for Whisper
-	cmd := exec.Command("ffmpeg", "-y", "-i", src, "-ac", "1", "-ar", "16000", dst)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("ffmpeg: %v\n%s", err, string(out))
-	}
-	return nil
-}
-
-func runWhisper(ctx context.Context, whisperBin string, modelPath string, wavPath string, lang string, translate bool) (string, error) {
-	args := []string{"-m", modelPath, "-f", wavPath, "-otxt"}
-
-	// auto language detection unless explicitly provided
-	if lang == "" {
-		args = append(args, "-l", "auto")
-	} else {
-		args = append(args, "-l", lang)
-	}
-
-	if translate {
-		// translate input → English
-		args = append(args, "-tr")
-	}
-
-	cmd := exec.CommandContext(ctx, whisperBin, args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("whisper: %v\n%s", err, string(out))
-	}
-
-	b, readErr := os.ReadFile(wavPath + ".txt")
-	if readErr == nil {
-		return strings.TrimSpace(string(b)), nil
-	}
-	s := strings.TrimSpace(string(out))
-	if s == "" {
-		return "", errors.New("no transcription produced")
-	}
-	return s, nil
-}
 
 func (bot *Bot) Run() {
 	u := tgbotapi.NewUpdate(0)
@@ -181,7 +140,6 @@ func (bot *Bot) Run() {
 		} else if update.Message.Audio != nil {
 			fileID = update.Message.Audio.FileID
 		} else if update.Message.Document != nil {
-			// If user sends a file (e.g., .ogg/.mp3/.wav), try it as well
 			fileID = update.Message.Document.FileID
 		} else {
 			continue
@@ -198,7 +156,7 @@ func (bot *Bot) Run() {
 		tmpDir := os.TempDir()
 		base := filepath.Base(tgFile.FilePath)
 		if base == "." || base == "/" || base == "" {
-			base = fmt.Sprintf("tg_%d.oga", time.Now().UnixNano())
+			base = fmt.Sprintf("tg_%d.ogg", time.Now().UnixNano())
 		}
 		srcPath := filepath.Join(tmpDir, base)
 		wavPath := strings.TrimSuffix(srcPath, filepath.Ext(srcPath)) + ".wav"
@@ -214,60 +172,57 @@ func (bot *Bot) Run() {
 
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Converting")
 		bot.api.Send(msg)
-		// Convert to WAV
-		if err := convertToWav(srcPath, wavPath); err != nil {
-			bot.api.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Convert error: %v", err)))
-			continue
+		
+		pcm, err := audioconv.ConvertFileToPCM16k(context.Background(), srcPath, audioconv.Options{})
+		if err != nil {
+			log.Error("convert audio: %v", err)
+		}
+		if len(pcm) == 0 {
+			log.Error("no audio samples after conversion")
 		}
 		defer func() {
 			os.Remove(wavPath)
 			os.Remove(wavPath + ".txt")
 		}()
 
-		// Detect language from Telegram (optional; Whisper can auto)
-		lang := ""
-		if update.Message.From != nil && update.Message.From.LanguageCode != "" {
-			// Telegram sends like "en", "ru", "uk", etc. Whisper expects ISO639-1—this is fine.
-			lang = update.Message.From.LanguageCode
-		}
-
-		// Run Whisper with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		whisperBin := "./whisper/whisper-cli"
-		//modelPath := "./whisper/ggml-medium.bin"
-		modelPath := "./whisper/ggml-small.bin"
 
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Recognition")
 		bot.api.Send(msg)
 
-		_ = lang
-		text, err := runWhisper(ctx, whisperBin, modelPath, wavPath, "", false)
+		tr, err := stt.NewTranscriber("third_party/whisper.cpp/models/ggml-base.bin")
 		if err != nil {
-			bot.api.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Whisper error: %v", err)))
-			continue
+			log.Error("load model: %v", err)
+		}
+		defer tr.Close()
+
+		res, err := tr.TranscribePCM(context.Background(), pcm, stt.Options{
+			Language:        "auto",
+			TranslateToEn:   false,
+			Threads:         0,            // auto (NumCPU)
+			TokenTimestamps: false,
+			MaxSegmentChars: 0,
+			MaxTokens:       0,
+			BeamSize:        0,        // >0 enables beam search
+			// Optional slicing:
+			Offset:   0 * time.Second,     // start at 0
+			Duration: 0,                    // full length
+		})
+		if err != nil {
+			log.Error("transcribe: %v", err)
 		}
 
-		if text == "" {
-			text = "(no speech detected)"
+		// 4) Print results
+		fmt.Printf("Language: %s\n", res.Language)
+		fmt.Println("Segments:")
+		for i, s := range res.Segments {
+			fmt.Printf("  %2d  [%6.2f .. %6.2f]  %s\n", i, s.StartSec, s.EndSec, s.Text)
 		}
+		fmt.Println("\nFULL TEXT:")
+		fmt.Println(res.Text)
 
-		reply := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+		reply := tgbotapi.NewMessage(update.Message.Chat.ID, res.Text)
 		reply.ReplyToMessageID = update.Message.MessageID
 		bot.api.Send(reply)
-
-		command := strings.ToLower(text)
-		switch command {
-		case "turn on the lamp.":
-			msg.Text = bot.SendReq("VERTEX", "LAMP:ON")
-		case "turn off the lamp.":
-			msg.Text = bot.SendReq("VERTEX", "LAMP:OFF")
-		default:
-			continue
-		}
-
-		bot.api.Send(msg)
 
 	}
 }

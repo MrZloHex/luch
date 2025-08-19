@@ -20,7 +20,6 @@ func (bot *Bot) setupKeyboard() {
 	bot.kb.kb.OneTimeKeyboard = false
 }
 
-
 func (bot *Bot) proccessInlineKeyboard(upd tgbotapi.Update) error {
 	log.Debug("CALLBACK")
 
@@ -49,4 +48,3 @@ func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 
 	return kb
 }
-
