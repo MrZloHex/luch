@@ -9,4 +9,8 @@ require (
 	github.com/lmittmann/tint v1.1.2
 )
 
-require github.com/spf13/pflag v1.0.7 // indirect
+require (
+	github.com/3d0c/gmf v0.0.0-20220906170454-be727bc5b56c // indirect
+	github.com/ggerganov/whisper.cpp/bindings/go v0.0.0-20250818173045-fc45bb86251f // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
+)

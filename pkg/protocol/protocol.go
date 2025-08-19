@@ -28,7 +28,7 @@ func NewProtocol(cfg PtclConfig) (*Protocol, error) {
 	log.Debug("init websocket protocol", "url", cfg.Url)
 
 	ptcl := Protocol{
-		cfg: cfg,
+		cfg:  cfg,
 		resp: make(chan []byte),
 	}
 
@@ -57,7 +57,7 @@ func (ptcl *Protocol) Send(to, payload string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return <- ptcl.resp, nil
+	return <-ptcl.resp, nil
 }
 
 func (ptcl *Protocol) write(to string, payload string) error {
