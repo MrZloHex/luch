@@ -4,9 +4,9 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "log/slog"
+	prgs "luch/internal/programmes"
 	"luch/pkg/util"
 	"strings"
-	prgs "luch/internal/programmes"
 )
 
 type Commands []tgbotapi.BotCommand

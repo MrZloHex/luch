@@ -9,10 +9,8 @@ import (
 
 	prgs "luch/internal/programmes"
 	"luch/pkg/protocol"
+	"luch/pkg/stt"
 
-	"io"
-	"net/http"
-	"os"
 	"time"
 )
 
@@ -27,6 +25,8 @@ type Bot struct {
 	api *tgbotapi.BotAPI
 
 	ptcl *protocol.Protocol
+	tr   *stt.Transcriber
+
 
 	prg prgs.Programme
 
@@ -72,6 +72,11 @@ func (bot *Bot) Setup() {
 	log.Debug("Commands from Telegram", "cmd", bot.cmds)
 
 	bot.setupKeyboard()
+
+	bot.tr, err = stt.NewTranscriber("third_party/whisper.cpp/models/ggml-base.bin")
+	if err != nil {
+		log.Error("load model: %v", err)
+	}
 }
 
 func (bot *Bot) SendWS(parts ...string) string {
@@ -81,26 +86,6 @@ func (bot *Bot) SendWS(parts ...string) string {
 	} else {
 		return string(resp)
 	}
-}
-
-func downloadFile(url string, dst string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-	f, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, resp.Body)
-	return err
 }
 
 func (bot *Bot) Run() {
@@ -129,6 +114,14 @@ func (bot *Bot) RequestBot(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error) 
 	return bot.api.Request(c)
 }
 
+func (bot *Bot) GetFileBot(c tgbotapi.FileConfig) (tgbotapi.File, error) {
+	return bot.api.GetFile(c)
+}
+
 func (bot *Bot) GetName() string {
 	return bot.api.Self.UserName
+}
+
+func (bot *Bot) GetToken() string {
+	return bot.api.Token
 }

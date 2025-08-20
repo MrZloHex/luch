@@ -13,12 +13,12 @@ func (bot *Bot) setupKeyboard() {
 	bot.kb.kb = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("/vertex"),
+			tgbotapi.NewKeyboardButton("/notes"),
 		),
 	)
 	bot.kb.kb.ResizeKeyboard = true
 	bot.kb.kb.OneTimeKeyboard = false
 }
-
 
 func (bot *Bot) makeInlineKeyboard(to string) tgbotapi.InlineKeyboardMarkup {
 	var kb tgbotapi.InlineKeyboardMarkup

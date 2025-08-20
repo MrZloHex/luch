@@ -17,15 +17,17 @@ type Programme struct {
 	Msg  Messanger
 
 	vertex Vertex
+	script Scriptorium
 }
 
 func (prg *Programme) Execute(upd tgbotapi.Update) error {
 	switch prg.Which() {
 	case PRG_IDLE:
 		Idle()
-		return nil
 	case PRG_VERTEX:
 		return prg.vertex.Execute(prg.Msg, upd)
+	case PRG_SCRIPT:
+		return prg.script.Execute(prg.Msg, upd)
 	}
 
 	return nil
@@ -42,6 +44,8 @@ func (prg *Programme) Set(kind PrgKind) {
 type Messanger interface {
 	SendBot(tgbotapi.Chattable) (tgbotapi.Message, error)
 	RequestBot(tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
+	GetFileBot(tgbotapi.FileConfig) (tgbotapi.File, error)
+	GetTextOrVoice(tgbotapi.Update) (string, error)
 	SendWS(...string) string
+	GetToken() string
 }
-

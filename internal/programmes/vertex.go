@@ -1,8 +1,8 @@
 package programmes
 
 import (
-	_ "log/slog"
 	"fmt"
+	_ "log/slog"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
