@@ -11,21 +11,6 @@ type Vertex struct {
 	brightness bool
 }
 
-func (v *Vertex) callback(m Messanger, upd tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
-
-	if upd.CallbackData() == "BRIGHT" {
-		msg.Text = "Please send 0..=255 led brightness"
-		v.brightness = true
-	} else {
-		msg.Text = m.SendWS(upd.CallbackData())
-	}
-
-	_, err := m.SendBot(msg)
-	m.RequestBot(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
-	return err
-}
-
 func vertexMakeKB() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -44,20 +29,33 @@ func vertexMakeKB() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-func (v *Vertex) Execute(m Messanger, upd tgbotapi.Update) error {
-	if upd.CallbackQuery != nil {
-		return v.callback(m, upd)
-	}
-
+func (v *Vertex) Start(bot Bot, upd tgbotapi.Update) error {
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-	if v.brightness {
-		msg.Text = m.SendWS(fmt.Sprintf("VERTEX:LED:BRIGHT:%s", upd.Message.Text))
-		v.brightness = false
-	} else {
-		msg.Text = "Commands for VERTEX:"
-		msg.ReplyMarkup = vertexMakeKB()
-	}
-
+	msg.Text = "Commands for VERTEX:"
+	msg.ReplyMarkup = vertexMakeKB()
 	_, err := m.SendBot(msg)
 	return err
 }
+
+func (v *Vertex) UpdateBot(bot Bot, upda tgbotapi.Update) error {
+	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
+
+	if upd.CallbackData() == "BRIGHT" {
+		msg.Text = "Please send 0..=255 led brightness"
+		v.brightness = true
+	} else {
+		msg.Text = m.SendWS(upd.CallbackData())
+	}
+
+	_, err := m.SendBot(msg)
+	m.RequestBot(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
+	return err
+}
+
+func (v *Vertex) UpdateBus(bus Bus, upd monobus.Update) error {
+
+	return nil
+}
+
+
+

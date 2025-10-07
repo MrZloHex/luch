@@ -10,6 +10,7 @@ const (
 	PRG_IDLE PrgKind = iota
 	PRG_VERTEX
 	PRG_SCRIPT
+	PRG_ACHTUNG
 )
 
 type Programme struct {
@@ -18,6 +19,7 @@ type Programme struct {
 
 	vertex Vertex
 	script Scriptorium
+	achtung Achtung
 }
 
 func (prg *Programme) Execute(upd tgbotapi.Update) error {
@@ -28,9 +30,15 @@ func (prg *Programme) Execute(upd tgbotapi.Update) error {
 		return prg.vertex.Execute(prg.Msg, upd)
 	case PRG_SCRIPT:
 		return prg.script.Execute(prg.Msg, upd)
+	case PRG_ACHTUNG:
+		return prg.achtung.Execute(prg.Msg, upd)
 	}
 
 	return nil
+}
+
+func (prg *Programme) Rx(data []byte) {
+
 }
 
 func (prg Programme) Which() PrgKind {
@@ -49,3 +57,19 @@ type Messanger interface {
 	SendWS(...string) string
 	GetToken() string
 }
+
+
+
+// new api 
+
+
+type Prg interface {
+	Start();
+	UpdateBot();
+	UpdateBus();
+}
+
+
+
+
+

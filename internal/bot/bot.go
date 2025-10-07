@@ -73,18 +73,24 @@ func (bot *Bot) Setup() {
 
 	bot.setupKeyboard()
 
-	bot.tr, err = stt.NewTranscriber("third_party/whisper.cpp/models/ggml-base.bin")
+	bot.tr, err = stt.NewTranscriber("third_party/whisper.cpp/models/ggml-medium.bin")
 	if err != nil {
 		log.Error("load model: %v", err)
 	}
 }
 
 func (bot *Bot) SendWS(parts ...string) string {
-	resp, err := bot.ptcl.Send(parts...)
+	resp, err := bot.ptcl.TransmitReceive(parts...)
 	if err != nil {
 		return fmt.Sprintf("Failed to send request: %s", err.Error())
 	} else {
 		return string(resp)
+	}
+}
+
+func (bot *Bot) listenWs() {
+	for {
+
 	}
 }
 
@@ -96,6 +102,8 @@ func (bot *Bot) Run() {
 
 	time.Sleep(time.Millisecond * 500)
 	updates.Clear()
+
+	go bot.listenWs()
 
 	for update := range updates {
 		if update.Message != nil && update.Message.IsCommand() {

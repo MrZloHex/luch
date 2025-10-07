@@ -15,6 +15,9 @@ func (bot *Bot) setupKeyboard() {
 			tgbotapi.NewKeyboardButton("/vertex"),
 			tgbotapi.NewKeyboardButton("/notes"),
 		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("/achtung"),
+		),
 	)
 	bot.kb.kb.ResizeKeyboard = true
 	bot.kb.kb.OneTimeKeyboard = false

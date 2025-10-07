@@ -20,6 +20,7 @@ var def_cmds = Commands{
 	{Command: "send", Description: "Send command to bus"},
 	{Command: "vertex", Description: "Send commands to vertex"},
 	{Command: "notes", Description: "Manage your notes"},
+	{Command: "achtung", Description: "Timers and Alarms"},
 }
 
 func (bot *Bot) fetchCommands() error {
@@ -79,6 +80,9 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		return nil
 	case "notes":
 		bot.prg.Set(prgs.PRG_SCRIPT)
+		return nil
+	case "achtung":
+		bot.prg.Set(prgs.PRG_ACHTUNG)
 		return nil
 
 	default:
