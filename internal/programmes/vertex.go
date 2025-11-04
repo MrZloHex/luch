@@ -1,17 +1,17 @@
 package programmes
 
 import (
-	"fmt"
-	_ "log/slog"
+	log "log/slog"
+	"luch/internal/bot"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Vertex struct {
-	brightness bool
+	waitingBrightness bool
 }
 
-func vertexMakeKB() tgbotapi.InlineKeyboardMarkup {
+func vertexKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Lamp Off", "VERTEX:LAMP:OFF"),
@@ -29,33 +29,63 @@ func vertexMakeKB() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
-func (v *Vertex) Start(bot Bot, upd tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-	msg.Text = "Commands for VERTEX:"
-	msg.ReplyMarkup = vertexMakeKB()
-	_, err := m.SendBot(msg)
-	return err
-}
-
-func (v *Vertex) UpdateBot(bot Bot, upda tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
-
-	if upd.CallbackData() == "BRIGHT" {
-		msg.Text = "Please send 0..=255 led brightness"
-		v.brightness = true
-	} else {
-		msg.Text = m.SendWS(upd.CallbackData())
+func (v *Vertex) Start(conn Conn, upd tgbotapi.Update) error {
+	chatID, _, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
 	}
 
-	_, err := m.SendBot(msg)
-	m.RequestBot(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
-	return err
-}
+	msg := tgbotapi.NewMessage(chatID, "Commands for VERTEX:")
+	msg.ReplyMarkup = vertexKeyboard()
 
-func (v *Vertex) UpdateBus(bus Bus, upd monobus.Update) error {
-
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("vertex: failed to send start message", "err", err)
+		return err
+	}
 	return nil
 }
 
+func (v *Vertex) UpdateBot(conn Conn, upd tgbotapi.Update) error {
+	chatID, text, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
+	}
 
+	msg := tgbotapi.NewMessage(chatID, "")
 
+	switch {
+	case text == "BRIGHT":
+		msg.Text = "Please send 0..=255 LED brightness"
+		v.waitingBrightness = true
+
+	case v.waitingBrightness:
+		log.Info("vertex: received brightness value", "value", text)
+		resp, err := conn.Ptcl.TransmitReceive("LED", "BRIGHT", text)
+		if err != nil {
+			log.Error("vertex: transmit failed", "err", err)
+			resp = []byte("failed to transmit brightness")
+		}
+		msg.Text = string(resp)
+		v.waitingBrightness = false
+
+	default:
+		resp, err := conn.Ptcl.TransmitReceive(text)
+		if err != nil {
+			log.Error("vertex: transmit failed", "err", err)
+			resp = []byte("failed to transmit command")
+		}
+		msg.Text = string(resp)
+	}
+
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("vertex: failed to send response", "err", err)
+	}
+
+	if upd.CallbackQuery != nil {
+		if _, err := conn.Bot.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, "")); err != nil {
+			log.Warn("vertex: failed to ack callback", "err", err)
+		}
+	}
+
+	return nil
+}

@@ -67,8 +67,7 @@ func main() {
 		Notify: *notifier,
 	}
 
-
-	bot, err := bot.NewBot(cfg, ptcl)
+	bot, err := bot.NewBot(cfg)
 	if err != nil {
 		slog.Error("Failed to init bot", "err", err)
 	}
@@ -76,9 +75,9 @@ func main() {
 
 	slog.Info("BOOTING UP", "bot", bot.GetName(), "url", ptcl_cfg.Url)
 
-	luch = luch.Init(bot, ptcl)
-
-	//bot.NotifyAll("Bot started")
+	luch, err := luch.Init(bot, ptcl)
+	bot.SetEvent(luch.GetEventChan())
+	ptcl.SetEvent(luch.GetEventChan())
 
 	//ptcl.OnDisconnect(func() {
 	//	bot.NotifyAll("Disconnected from server")

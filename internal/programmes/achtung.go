@@ -1,5 +1,8 @@
 package programmes
 
+/*
+
+
 import (
 	"strings"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -48,7 +51,7 @@ func (ach *Achtung) newTimer(m Messanger, upd tgbotapi.Update) error {
 		return nil
 	}
 
-	msg.Text = m.SendWS("ACHTUNG", "SET:TIMER", tim[0], tim[1]) 
+	msg.Text = m.SendWS("ACHTUNG", "SET:TIMER", tim[0], tim[1])
 	_, err := m.SendBot(msg)
 	return err
 }
@@ -69,3 +72,4 @@ func (ach *Achtung) Execute(m Messanger, upd tgbotapi.Update) error {
 		return err
 	}
 }
+*/

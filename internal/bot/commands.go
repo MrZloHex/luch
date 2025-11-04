@@ -2,11 +2,12 @@ package bot
 
 import (
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "log/slog"
-	prgs "luch/internal/programmes"
+	"luch/internal/core"
 	"luch/pkg/util"
 	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Commands []tgbotapi.BotCommand
@@ -67,22 +68,46 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 	case "notify":
 		msg.Text = bot.toggleNotify(upd.Message.Chat.ID)
 		bot.saveNotifiers()
-	case "send":
-		args := strings.Split(upd.Message.CommandArguments(), " ")
-		if len(args) != 2 {
-			msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
-		} else {
-			msg.Text = bot.SendWS(args[0], args[1])
-		}
+
+		/*
+			case "send":
+				args := strings.Split(upd.Message.CommandArguments(), " ")
+				if len(args) != 2 {
+					msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
+				} else {
+					msg.Text = bot.SendWS(args[0], args[1])
+				}
+		*/
 
 	case "vertex":
-		bot.prg.Set(prgs.PRG_VERTEX)
+		bot.out <- core.Event{
+			Kind: core.EV_CTRL,
+			Ctrl: core.CtrlEvent{
+				Kind: core.SET_PRG,
+				Prg:  core.PRG_VERTEX,
+			},
+			Bot: upd,
+		}
 		return nil
 	case "notes":
-		bot.prg.Set(prgs.PRG_SCRIPT)
+		bot.out <- core.Event{
+			Kind: core.EV_CTRL,
+			Ctrl: core.CtrlEvent{
+				Kind: core.SET_PRG,
+				Prg:  core.PRG_SCRIPT,
+			},
+			Bot: upd,
+		}
 		return nil
 	case "achtung":
-		bot.prg.Set(prgs.PRG_ACHTUNG)
+		bot.out <- core.Event{
+			Kind: core.EV_CTRL,
+			Ctrl: core.CtrlEvent{
+				Kind: core.SET_PRG,
+				Prg:  core.PRG_ACHTUNG,
+			},
+			Bot: upd,
+		}
 		return nil
 
 	default:

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	ws "github.com/gorilla/websocket"
+
+	"luch/internal/core"
 )
 
 type PtclConfig struct {
@@ -20,6 +22,7 @@ type Protocol struct {
 	conn *ws.Conn
 
 	resp chan []byte
+	out chan<- core.Event
 
 	onDisconnect func()
 	onConnect    func()
@@ -42,6 +45,10 @@ func NewProtocol(cfg PtclConfig) (*Protocol, error) {
 	ptcl.conn = conn
 
 	return &ptcl, nil
+}
+
+func (ptcl *Protocol) SetEvent(out chan<- core.Event) {
+	ptcl.out = out
 }
 
 func (ptcl *Protocol) Run() {
@@ -94,6 +101,7 @@ func (ptcl *Protocol) checkRecipient(msg []byte) bool {
 }
 
 func (ptcl *Protocol) write(payload string) error {
+	log.Debug("Write ws", "msg", string(payload))
 	packet := []byte(payload)
 	err := ptcl.conn.WriteMessage(ws.TextMessage, packet)
 	if err != nil {
@@ -115,7 +123,7 @@ func (ptcl *Protocol) read() {
 			}
 		}
 
-		log.Debug("Got msg", "msg", string(msg))
+		log.Debug("Read ws", "msg", string(msg))
 		ptcl.resp <- msg
 	}
 

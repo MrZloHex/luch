@@ -49,11 +49,11 @@ func (bot *Bot) GetTextOrVoice(update tgbotapi.Update) (string, error) {
 	}
 
 	typing := tgbotapi.NewChatAction(update.Message.Chat.ID, tgbotapi.ChatTyping)
-	bot.SendBot(typing)
+	bot.Send(typing)
 
-	tgFile, err := bot.GetFileBot(tgbotapi.FileConfig{FileID: fileID})
+	tgFile, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 	if err != nil {
-		bot.SendBot(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Failed to get file: %v", err)))
+		bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Failed to get file: %v", err)))
 		return "", err
 	}
 	tmpDir := os.TempDir()
@@ -66,7 +66,7 @@ func (bot *Bot) GetTextOrVoice(update tgbotapi.Update) (string, error) {
 
 	fileURL := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", bot.GetToken(), tgFile.FilePath)
 	if err := downloadFile(fileURL, srcPath); err != nil {
-		bot.SendBot(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Download error: %v", err)))
+		bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Download error: %v", err)))
 		return "", err
 	}
 	defer os.Remove(srcPath)
@@ -82,7 +82,6 @@ func (bot *Bot) GetTextOrVoice(update tgbotapi.Update) (string, error) {
 		os.Remove(wavPath)
 		os.Remove(wavPath + ".txt")
 	}()
-
 
 	res, err := bot.tr.TranscribePCM(context.Background(), pcm, stt.Options{
 		Language:        "auto",
