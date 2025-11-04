@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"luch/internal/bot"
+	"luch/internal/luch"
 	"luch/pkg/protocol"
 )
 
@@ -66,26 +67,30 @@ func main() {
 		Notify: *notifier,
 	}
 
+
 	bot, err := bot.NewBot(cfg, ptcl)
 	if err != nil {
 		slog.Error("Failed to init bot", "err", err)
 	}
+	bot.Setup()
 
 	slog.Info("BOOTING UP", "bot", bot.GetName(), "url", ptcl_cfg.Url)
 
-	bot.Setup()
-	bot.NotifyAll("Bot started")
+	luch = luch.Init(bot, ptcl)
 
-	ptcl.OnDisconnect(func() {
-		bot.NotifyAll("Disconnected from server")
-	})
-	ptcl.OnConnect(func() {
-		bot.NotifyAll("Connected to server")
-	})
+	//bot.NotifyAll("Bot started")
+
+	//ptcl.OnDisconnect(func() {
+	//	bot.NotifyAll("Disconnected from server")
+	//})
+	//ptcl.OnConnect(func() {
+	//	bot.NotifyAll("Connected to server")
+	//})
 
 	go ptcl.Run()
 	go bot.Run()
 
 	for {
+		luch.Run()
 	}
 }
