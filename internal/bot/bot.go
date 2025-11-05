@@ -9,6 +9,8 @@ import (
 	"luch/pkg/stt"
 
 	"time"
+	"strings"
+	"strconv"
 
 	"luch/internal/core"
 )
@@ -18,10 +20,12 @@ type BotConfig struct {
 	Debug  bool
 	Logger *stdlog.Logger
 	Notify string
+	WhiteList string
 }
 
 type Bot struct {
 	api *tgbotapi.BotAPI
+	whitelist map[int64]struct{}
 
 	tr *stt.Transcriber
 
@@ -32,6 +36,7 @@ type Bot struct {
 	out chan<- core.Event
 }
 
+
 func NewBot(cfg BotConfig) (*Bot, error) {
 	log.Debug("init telebot")
 
@@ -39,7 +44,10 @@ func NewBot(cfg BotConfig) (*Bot, error) {
 		not: Notifier{
 			notifyFile: cfg.Notify,
 		},
+		whitelist: make(map[int64]struct{}),
 	}
+
+	bot.parseWhiteList(cfg.WhiteList)
 
 	api, err := tgbotapi.NewBotAPI(cfg.Token)
 	if err != nil {
@@ -54,6 +62,14 @@ func NewBot(cfg BotConfig) (*Bot, error) {
 	log.Debug("authorised telebot")
 
 	return &bot, nil
+}
+
+func (bot *Bot) parseWhiteList(line string) {
+	log.Debug("WhiteList: ", "list", line)
+	for _, el := range strings.Split(line, ",") {
+		id, _ := strconv.ParseInt(el, 10, 64)
+		bot.whitelist[id] = struct{}{}
+	}
 }
 
 func (bot *Bot) SetEvent(out chan<- core.Event) {
@@ -76,7 +92,7 @@ func (bot *Bot) Setup() {
 		log.Error("load model: %v", err)
 	}
 
-	bot.NotifyAll("Bot started")
+	bot.NotifyAll("Luch succefully loaded")
 }
 
 func (bot *Bot) Run() {
@@ -89,6 +105,13 @@ func (bot *Bot) Run() {
 	updates.Clear()
 
 	for update := range updates {
+		if _, is := bot.whitelist[update.Message.From.ID]; !is {
+			log.Warn("Untrusted user", "id", update.Message.From.ID, "name", update.Message.From.UserName)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Closed spaced, for access please email MrZloHex")
+			bot.api.Send(msg)
+			continue
+		}
+
 		if update.Message != nil && update.Message.IsCommand() {
 			bot.processCmd(update)
 		} else {

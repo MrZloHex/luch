@@ -55,9 +55,9 @@ type Income struct {
 
 func (web *WebSocket) Read() Income {
 	/*
-		if web.timeout > 0 {
-	        _ = web.conn.SetReadDeadline(time.Now().Add(web.timeout))
-	    }
+			if web.timeout > 0 {
+		        _ = web.conn.SetReadDeadline(time.Now().Add(web.timeout))
+		    }
 	*/
 	_, msg, err := web.conn.ReadMessage()
 	if err != nil {

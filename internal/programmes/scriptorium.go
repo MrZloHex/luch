@@ -1,99 +1,76 @@
 package programmes
 
-/*
-
 import (
+	log "log/slog"
+	"luch/internal/bot"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type Note struct {
-	Text string
-}
-
 type Scriptorium struct {
-	cmd string
+	waitAudio bool
 }
 
-func (s *Scriptorium) callback(m Messanger, upd tgbotapi.Update) error {
-	s.cmd = upd.CallbackData()
-	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
-
-	switch upd.CallbackData() {
-	case "NEW":
-		msg.Text = "Send please audio file or text of note"
-	case "OKAY":
-		msg.Text = "Here should be websocket send command"
-	case "NEW:EDIT":
-		msg.Text = "Please send new text for note"
-		s.cmd = "NEW"
-	case "CANCEL":
-		s.cmd = ""
-	case "EDIT":
-		fallthrough
-	case "GET":
-		msg.Text = "NOT IMPL"
-	}
-
-	_, err := m.SendBot(msg)
-	m.RequestBot(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
-	return err
-}
-
-func scriptMakeKB() tgbotapi.InlineKeyboardMarkup {
+func scriptoriumKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("New Note", "NEW"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Edit Note", "EDIT"),
-			tgbotapi.NewInlineKeyboardButtonData("Get Note", "GET"),
+			tgbotapi.NewInlineKeyboardButtonData("Transcribe", "TRANSCRIPTION"),
 		),
 	)
 }
 
-func (s *Scriptorium) newNote(m Messanger, upd tgbotapi.Update) error {
-	txt, err := m.GetTextOrVoice(upd)
-	if err != nil {
-		return err
+func (s *Scriptorium) Start(conn Conn, upd tgbotapi.Update) error {
+	chatID, _, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
 	}
 
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-	msg.Text = "You want to add a note with:\n`\n"+txt+"\n`"
-	msg.ParseMode = "MarkdownV2"
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Okay", "OKAY"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Edit", "NEW:EDIT"),
-			tgbotapi.NewInlineKeyboardButtonData("Cancel", "CANCEL"),
-		),
-	)
-	m.SendBot(msg)
+	msg := tgbotapi.NewMessage(chatID, "Commands for SCRIPTORIUM:")
+	msg.ReplyMarkup = scriptoriumKeyboard()
 
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("failed to send start message", "err", err)
+		return err
+	}
 	return nil
 }
 
-func (s *Scriptorium) Execute(m Messanger, upd tgbotapi.Update) error {
-	if upd.CallbackQuery != nil {
-		return s.callback(m, upd)
+func (s *Scriptorium) UpdateBot(conn Conn, upd tgbotapi.Update) error {
+	chatID, text, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
 	}
 
-	switch s.cmd {
-	case "NEW":
-		s.newNote(m, upd)
-	case "EDIT":
-		fallthrough
-	case "GET":
-		fallthrough
+	msg := tgbotapi.NewMessage(chatID, "")
+
+	switch {
+	case text == "TRANSCRIPTION":
+		msg.Text = "Please send audio file to triscibe"
+		s.waitAudio = true
+
+	case s.waitAudio:
+		scr, err := conn.Bot.GetTextOrVoice(upd)
+		if err != nil {
+			log.Error("Failed to get text or voice", "err", err)
+			msg.Text = "Failed"
+		} else {
+			s.waitAudio = false
+			msg.Text = scr
+		}
+
 	default:
-		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-		msg.Text = "Commands for SCRIPTORIUM:"
-		msg.ReplyMarkup = scriptMakeKB()
-		_, err := m.SendBot(msg)
-		return err
+		log.Warn("Nothing to do")
+	}
+
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("failed to send response", "err", err)
+	}
+
+	if upd.CallbackQuery != nil {
+		if _, err := conn.Bot.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, "")); err != nil {
+			log.Warn("failed to ack callback", "err", err)
+		}
 	}
 
 	return nil
 }
-*/

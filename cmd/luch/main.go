@@ -50,6 +50,11 @@ func main() {
 		slog.Error("Failed to get TOKEN")
 		os.Exit(1)
 	}
+	whitelist := os.Getenv("WHITELIST")
+	if whitelist == "" {
+		slog.Error("Failed to get WhiteList")
+		os.Exit(1)
+	}
 
 	ptcl_cfg := protocol.PtclConfig{
 		Shard:   "LUCH",
@@ -69,6 +74,7 @@ func main() {
 		Debug:  *botDebug,
 		Logger: stdToSlog,
 		Notify: *notifier,
+		WhiteList: whitelist,
 	}
 
 	bot, err := bot.NewBot(cfg)
