@@ -25,4 +25,5 @@ type Event struct {
 	Kind EventKind
 	Bot  tgbotapi.Update
 	Ctrl CtrlEvent
+	WS   string
 }

@@ -3,15 +3,17 @@ package main
 import (
 	"os"
 
-	"github.com/lmittmann/tint"
 	"log"
 	"log/slog"
+
+	"github.com/lmittmann/tint"
 
 	cli "github.com/spf13/pflag"
 
 	"github.com/joho/godotenv"
 
 	"luch/internal/bot"
+	"luch/internal/core"
 	"luch/internal/luch"
 	"luch/pkg/protocol"
 )
@@ -77,7 +79,8 @@ func main() {
 
 	luch, err := luch.Init(bot, ptcl)
 	bot.SetEvent(luch.GetEventChan())
-	ptcl.SetEvent(luch.GetEventChan())
+	proto := core.NewProtoEvHandler(luch.GetEventChan())
+	ptcl.EmitOut(proto.EmitOut)
 
 	//ptcl.OnDisconnect(func() {
 	//	bot.NotifyAll("Disconnected from server")

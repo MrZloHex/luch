@@ -60,21 +60,23 @@ func (v *Vertex) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 
 	case v.waitingBrightness:
 		log.Info("vertex: received brightness value", "value", text)
-		resp, err := conn.Ptcl.TransmitReceive("LED", "BRIGHT", text)
+		rx, err := conn.Ptcl.TransmitReceive([]string{"VERTEX", "LED", "BRIGHT", text})
+		resp := rx.String()
 		if err != nil {
 			log.Error("vertex: transmit failed", "err", err)
-			resp = []byte("failed to transmit brightness")
+			resp = "failed to transmit brightness"
 		}
-		msg.Text = string(resp)
+		msg.Text = resp
 		v.waitingBrightness = false
 
 	default:
-		resp, err := conn.Ptcl.TransmitReceive(text)
+		rx, err := conn.Ptcl.TransmitReceive(text)
+		resp := rx.String()
 		if err != nil {
 			log.Error("vertex: transmit failed", "err", err)
-			resp = []byte("failed to transmit command")
+			resp = "failed to transmit command"
 		}
-		msg.Text = string(resp)
+		msg.Text = resp
 	}
 
 	if _, err := conn.Bot.Send(msg); err != nil {

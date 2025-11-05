@@ -1,155 +1,87 @@
 package protocol
 
 import (
-	"fmt"
 	log "log/slog"
-	"strings"
 	"time"
 
 	ws "github.com/gorilla/websocket"
-
-	"luch/internal/core"
 )
 
-type PtclConfig struct {
-	Shard  string
-	Url    string
-	Reconn uint
+type WebSocket struct {
+	conn   *ws.Conn
+	url    string
+	reconn uint
 }
 
-type Protocol struct {
-	cfg  PtclConfig
-	conn *ws.Conn
+func NewWebSocket(url string, reconn uint) (*WebSocket, error) {
+	log.Debug("init websocket protocol", "url", url)
 
-	resp chan []byte
-	out chan<- core.Event
-
-	onDisconnect func()
-	onConnect    func()
-	onReceive    func()
-}
-
-func NewProtocol(cfg PtclConfig) (*Protocol, error) {
-	log.Debug("init websocket protocol", "url", cfg.Url)
-
-	ptcl := Protocol{
-		cfg:  cfg,
-		resp: make(chan []byte),
+	web := &WebSocket{
+		url:    url,
+		reconn: reconn,
 	}
 
-	conn, _, err := ws.DefaultDialer.Dial(cfg.Url, nil)
+	conn, _, err := ws.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		log.Error("Failed to dial url", "err", err)
 		return nil, err
 	}
-	ptcl.conn = conn
+	web.conn = conn
 
-	return &ptcl, nil
+	return web, nil
 }
 
-func (ptcl *Protocol) SetEvent(out chan<- core.Event) {
-	ptcl.out = out
-}
-
-func (ptcl *Protocol) Run() {
-	for {
-		ptcl.read()
-		ptcl.tryReconn()
-	}
-}
-
-func (ptcl *Protocol) TransmitReceive(parts ...string) ([]byte, error) {
-	pay := strings.Join(parts, ":")
-	err := ptcl.write(fmt.Sprintf("%s:%s", pay, ptcl.cfg.Shard))
-	if err != nil {
-		return nil, err
-	}
-	resp := <-ptcl.resp
-	for !ptcl.checkRecipient(resp) {
-		resp = <-ptcl.resp
-	}
-	return resp, nil
-}
-
-func (ptcl *Protocol) Transmit(parts ...string) error {
-	pay := strings.Join(parts, ":")
-	err := ptcl.write(fmt.Sprintf("%s:%s", pay, ptcl.cfg.Shard))
+func (web *WebSocket) Write(payload []byte) error {
+	//log.Debug("Write ws", "msg", string(payload))
+	err := web.conn.WriteMessage(ws.TextMessage, payload)
 	return err
 }
 
-func (ptcl *Protocol) Receive() []byte {
-	resp := <-ptcl.resp
-	for !ptcl.checkRecipient(resp) {
-		resp = <-ptcl.resp
-	}
-	return resp
+type WsIncomeKind uint
+
+const (
+	CONN_CLOSE WsIncomeKind = iota
+	READ_FAILURE
+	READ_OK
+)
+
+type Income struct {
+	kind WsIncomeKind
+	msg  []byte
+	err  error
 }
 
-func (ptcl *Protocol) Parse(msg []byte) (string, []string, string) {
-	parts := strings.Split(string(msg), ":")
-	return parts[0], parts[1 : len(parts)-1], parts[len(parts)-1]
-}
-
-func (ptcl *Protocol) OnDisconnect(f func()) { ptcl.onDisconnect = f }
-func (ptcl *Protocol) OnConnect(f func())    { ptcl.onConnect = f }
-func (ptcl *Protocol) OnReceive(f func())    { ptcl.onReceive = f }
-
-// private
-
-func (ptcl *Protocol) checkRecipient(msg []byte) bool {
-	return strings.Split(string(msg), ":")[0] == ptcl.cfg.Shard
-}
-
-func (ptcl *Protocol) write(payload string) error {
-	log.Debug("Write ws", "msg", string(payload))
-	packet := []byte(payload)
-	err := ptcl.conn.WriteMessage(ws.TextMessage, packet)
+func (web *WebSocket) Read() Income {
+	_, msg, err := web.conn.ReadMessage()
 	if err != nil {
-		log.Error("Failed to write", "err", err)
-	}
-	return err
-}
-
-func (ptcl *Protocol) read() {
-	for {
-		_, msg, err := ptcl.conn.ReadMessage()
-		if err != nil {
-			if WsIsClosed(err) {
-				log.Warn("Connection closed", "err", err)
-				break
-			} else {
-				log.Error("Failed to read", "err", err)
-				continue
+		if WsIsClosed(err) {
+			return Income{
+				kind: CONN_CLOSE,
+				err:  err,
 			}
 		}
-
-		log.Debug("Read ws", "msg", string(msg))
-		ptcl.resp <- msg
+		return Income{
+			kind: READ_FAILURE,
+			err:  err,
+		}
 	}
 
-	if ptcl.onDisconnect != nil {
-		ptcl.onDisconnect()
+	return Income{
+		kind: READ_OK,
+		msg:  msg,
 	}
 }
 
-func (ptcl *Protocol) tryReconn() {
-	log.Warn("Trying to reconnect on", "url", ptcl.cfg.Url)
-
+func (web *WebSocket) TryReconn() {
 	for {
-		conn, _, err := ws.DefaultDialer.Dial(ptcl.cfg.Url, nil)
+		conn, _, err := ws.DefaultDialer.Dial(web.url, nil)
 		if err == nil {
-			ptcl.conn = conn
+			web.conn = conn
 			break
 		}
 
-		log.Warn("Failed to dial url", "err", err)
-		time.Sleep(time.Second * time.Duration(ptcl.cfg.Reconn))
+		time.Sleep(time.Second * time.Duration(web.reconn))
 	}
-
-	if ptcl.onConnect != nil {
-		ptcl.onConnect()
-	}
-	log.Info("Succefully reconnected")
 }
 
 func WsIsClosed(err error) bool {

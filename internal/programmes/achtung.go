@@ -1,10 +1,10 @@
 package programmes
 
-/*
-
-
 import (
-	"strings"
+	_ "strings"
+	log "log/slog"
+	"luch/internal/bot"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -12,11 +12,44 @@ type Achtung struct {
 	cmd string
 }
 
-func (ach *Achtung) callback(m Messanger, upd tgbotapi.Update) error {
-	ach.cmd = upd.CallbackData()
-	msg := tgbotapi.NewMessage(upd.CallbackQuery.Message.Chat.ID, "")
+func achtungKeyboard() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("New Timer", "NEW:TIMER"),
+			tgbotapi.NewInlineKeyboardButtonData("New Alarm", "NEW:ALARM"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Get Timers", "GET:TIMER"),
+			tgbotapi.NewInlineKeyboardButtonData("Get Alarms", "GET:ALARM"),
+		),
+	)
+}
 
-	switch upd.CallbackData() {
+func (ach *Achtung) Start(conn Conn, upd tgbotapi.Update) error {
+	chatID, _, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
+	}
+
+	msg := tgbotapi.NewMessage(chatID, "Commands for ACHTUNG:")
+	msg.ReplyMarkup = achtungKeyboard()
+
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("achtung: failed to send start message", "err", err)
+		return err
+	}
+	return nil
+}
+
+func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
+	chatID, text, ok := bot.PickIDnTXT(upd)
+	if !ok {
+		return nil
+	}
+
+	msg := tgbotapi.NewMessage(chatID, "")
+
+	switch text {
 	case "NEW:TIMER":
 		msg.Text = "Send please name and duration of timer `oven 20m`"
 	case "GET:TIMER":
@@ -25,23 +58,20 @@ func (ach *Achtung) callback(m Messanger, upd tgbotapi.Update) error {
 		msg.Text = "NOT IMPL"
 	}
 
-	_, err := m.SendBot(msg)
-	m.RequestBot(tgbotapi.NewCallback(upd.CallbackQuery.ID, ""))
-	return err
+	if _, err := conn.Bot.Send(msg); err != nil {
+		log.Error("vertex: failed to send response", "err", err)
+	}
+
+	if upd.CallbackQuery != nil {
+		if _, err := conn.Bot.Request(tgbotapi.NewCallback(upd.CallbackQuery.ID, "")); err != nil {
+			log.Warn("vertex: failed to ack callback", "err", err)
+		}
+	}
+
+	return nil
 }
 
-func achtungMakeKB() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("New Timer", "NEW:TIMER"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Get Timers", "GET:TIMER"),
-		),
-	)
-}
-
-
+/*
 func (ach *Achtung) newTimer(m Messanger, upd tgbotapi.Update) error {
 	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
 	tim := strings.Split(upd.Message.Text, " ")
