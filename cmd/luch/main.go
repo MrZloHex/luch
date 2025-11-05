@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"log"
 	"log/slog"
@@ -51,9 +52,10 @@ func main() {
 	}
 
 	ptcl_cfg := protocol.PtclConfig{
-		Shard:  "LUCH",
-		Url:    *url,
-		Reconn: 5,
+		Shard:   "LUCH",
+		Url:     *url,
+		Reconn:  5,
+		Timeout: 3 * time.Second,
 	}
 
 	ptcl, err := protocol.NewProtocol(ptcl_cfg)
@@ -81,13 +83,6 @@ func main() {
 	bot.SetEvent(luch.GetEventChan())
 	proto := core.NewProtoEvHandler(luch.GetEventChan())
 	ptcl.EmitOut(proto.EmitOut)
-
-	//ptcl.OnDisconnect(func() {
-	//	bot.NotifyAll("Disconnected from server")
-	//})
-	//ptcl.OnConnect(func() {
-	//	bot.NotifyAll("Connected to server")
-	//})
 
 	go ptcl.Run()
 	go bot.Run()

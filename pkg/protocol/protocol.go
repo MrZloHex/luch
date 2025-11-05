@@ -7,12 +7,14 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 type PtclConfig struct {
 	Shard   string
 	Url     string
 	Reconn  uint
+	Timeout time.Duration
 	EmitOut func(*Message)
 }
 
@@ -28,7 +30,7 @@ type Protocol struct {
 }
 
 func NewProtocol(cfg PtclConfig) (*Protocol, error) {
-	ws, err := NewWebSocket(cfg.Url, cfg.Reconn)
+	ws, err := NewWebSocket(cfg.Url, cfg.Reconn, cfg.Timeout)
 	if err != nil {
 		log.Error("Failed to init ws connection")
 		return nil, err

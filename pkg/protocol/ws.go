@@ -8,17 +8,19 @@ import (
 )
 
 type WebSocket struct {
-	conn   *ws.Conn
-	url    string
-	reconn uint
+	conn    *ws.Conn
+	url     string
+	reconn  uint
+	timeout time.Duration
 }
 
-func NewWebSocket(url string, reconn uint) (*WebSocket, error) {
+func NewWebSocket(url string, reconn uint, timeout time.Duration) (*WebSocket, error) {
 	log.Debug("init websocket protocol", "url", url)
 
 	web := &WebSocket{
-		url:    url,
-		reconn: reconn,
+		url:     url,
+		reconn:  reconn,
+		timeout: timeout,
 	}
 
 	conn, _, err := ws.DefaultDialer.Dial(url, nil)
@@ -52,6 +54,11 @@ type Income struct {
 }
 
 func (web *WebSocket) Read() Income {
+	/*
+		if web.timeout > 0 {
+	        _ = web.conn.SetReadDeadline(time.Now().Add(web.timeout))
+	    }
+	*/
 	_, msg, err := web.conn.ReadMessage()
 	if err != nil {
 		if WsIsClosed(err) {
