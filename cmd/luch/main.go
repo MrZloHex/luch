@@ -70,10 +70,10 @@ func main() {
 	}
 
 	cfg := bot.BotConfig{
-		Token:  token,
-		Debug:  *botDebug,
-		Logger: stdToSlog,
-		Notify: *notifier,
+		Token:     token,
+		Debug:     *botDebug,
+		Logger:    stdToSlog,
+		Notify:    *notifier,
 		WhiteList: whitelist,
 	}
 

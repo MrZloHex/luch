@@ -23,4 +23,3 @@ func (bot *Bot) setupKeyboard() {
 	bot.kb.kb.ResizeKeyboard = true
 	bot.kb.kb.OneTimeKeyboard = false
 }
-

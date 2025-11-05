@@ -8,23 +8,23 @@ import (
 
 	"luch/pkg/stt"
 
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 
 	"luch/internal/core"
 )
 
 type BotConfig struct {
-	Token  string
-	Debug  bool
-	Logger *stdlog.Logger
-	Notify string
+	Token     string
+	Debug     bool
+	Logger    *stdlog.Logger
+	Notify    string
 	WhiteList string
 }
 
 type Bot struct {
-	api *tgbotapi.BotAPI
+	api       *tgbotapi.BotAPI
 	whitelist map[int64]struct{}
 
 	tr *stt.Transcriber
@@ -35,7 +35,6 @@ type Bot struct {
 
 	out chan<- core.Event
 }
-
 
 func NewBot(cfg BotConfig) (*Bot, error) {
 	log.Debug("init telebot")
