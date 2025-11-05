@@ -20,6 +20,7 @@ type Luch struct {
 	vertex  programmes.Vertex
 	achtung programmes.Achtung
 	script  programmes.Scriptorium
+	control programmes.Control
 }
 
 func Init(bot *bot.Bot, ptcl *protocol.Protocol) (*Luch, error) {
@@ -82,6 +83,8 @@ func (luch *Luch) startPrg(upd tgbotapi.Update) {
 		luch.achtung.Start(luch.conn, upd)
 	case core.PRG_SCRIPT:
 		luch.script.Start(luch.conn, upd)
+	case core.PRG_CONTROL:
+		luch.control.Start(luch.conn, upd)
 	}
 }
 
@@ -93,5 +96,7 @@ func (luch *Luch) updateBotPrg(upd tgbotapi.Update) {
 		luch.achtung.UpdateBot(luch.conn, upd)
 	case core.PRG_SCRIPT:
 		luch.script.UpdateBot(luch.conn, upd)
+	case core.PRG_CONTROL:
+		luch.control.UpdateBot(luch.conn, upd)
 	}
 }

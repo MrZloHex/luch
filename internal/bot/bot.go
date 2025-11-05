@@ -105,9 +105,19 @@ func (bot *Bot) Run() {
 	updates.Clear()
 
 	for update := range updates {
-		if _, is := bot.whitelist[update.Message.From.ID]; !is {
+		var id int64
+		if update.Message != nil {
+			id = update.Message.From.ID
+		} else if update.CallbackQuery != nil {
+			id = update.CallbackQuery.From.ID
+		} else {
+			log.Warn("Got such update with no ID", "upd", update)
+			continue
+		}
+
+		if _, is := bot.whitelist[id]; !is {
 			log.Warn("Untrusted user", "id", update.Message.From.ID, "name", update.Message.From.UserName)
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Closed spaced, for access please email MrZloHex")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Closed space, for access please email MrZloHex")
 			bot.api.Send(msg)
 			continue
 		}

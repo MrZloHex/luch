@@ -7,6 +7,7 @@ const (
 	PRG_VERTEX
 	PRG_SCRIPT
 	PRG_ACHTUNG
+	PRG_CONTROL
 )
 
 func (prg PrgKind) String() string {
@@ -19,6 +20,8 @@ func (prg PrgKind) String() string {
 		return "SCRIPT"
 	case PRG_ACHTUNG:
 		return "ACHTUNG"
+	case PRG_CONTROL:
+		return "CONTROL"
 	}
 
 	return "UNREACHABLE"

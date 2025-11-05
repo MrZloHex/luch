@@ -18,10 +18,10 @@ var def_cmds = Commands{
 	{Command: "menu", Description: "Show reply keyboard"},
 	{Command: "hide", Description: "Hide reply keyboard"},
 	{Command: "notify", Description: "Toggle notification for me"},
-	{Command: "send", Description: "Send command to bus"},
 	{Command: "vertex", Description: "Send commands to vertex"},
 	{Command: "notes", Description: "Manage your notes"},
 	{Command: "achtung", Description: "Timers and Alarms"},
+	{Command: "control", Description: "Debug & Control"},
 }
 
 func (bot *Bot) fetchCommands() error {
@@ -69,16 +69,6 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 		msg.Text = bot.toggleNotify(upd.Message.Chat.ID)
 		bot.saveNotifiers()
 
-		/*
-			case "send":
-				args := strings.Split(upd.Message.CommandArguments(), " ")
-				if len(args) != 2 {
-					msg.Text = "Should be 2 arguments: `TO[space]PAYLOAD`"
-				} else {
-					msg.Text = bot.SendWS(args[0], args[1])
-				}
-		*/
-
 	case "vertex":
 		bot.out <- core.Event{
 			Kind: core.EV_CTRL,
@@ -105,6 +95,16 @@ func (bot *Bot) processCmd(upd tgbotapi.Update) error {
 			Ctrl: core.CtrlEvent{
 				Kind: core.SET_PRG,
 				Prg:  core.PRG_ACHTUNG,
+			},
+			Bot: upd,
+		}
+		return nil
+	case "control":
+		bot.out <- core.Event{
+			Kind: core.EV_CTRL,
+			Ctrl: core.CtrlEvent{
+				Kind: core.SET_PRG,
+				Prg:  core.PRG_CONTROL,
 			},
 			Bot: upd,
 		}
