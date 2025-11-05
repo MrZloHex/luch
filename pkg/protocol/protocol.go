@@ -226,3 +226,15 @@ func (m *Message) String() string {
 	parts = append(parts, m.From)
 	return strings.Join(parts, ":")
 }
+
+func (m *Message) Error(reason string, args ...string) {
+	m.Verb = "ERR"
+	m.Noun = reason
+	m.Args = args
+}
+
+func (m *Message) Ok(reason string, args ...string) {
+	m.Verb = "OK"
+	m.Noun = reason
+	m.Args = args
+}

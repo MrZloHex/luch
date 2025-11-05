@@ -32,7 +32,7 @@ func NewWebSocket(url string, reconn uint) (*WebSocket, error) {
 }
 
 func (web *WebSocket) Write(payload []byte) error {
-	//log.Debug("Write ws", "msg", string(payload))
+	log.Debug("Write ws", "msg", string(payload))
 	err := web.conn.WriteMessage(ws.TextMessage, payload)
 	return err
 }
@@ -66,6 +66,7 @@ func (web *WebSocket) Read() Income {
 		}
 	}
 
+	log.Debug("Read ws", "msg", string(msg))
 	return Income{
 		kind: READ_OK,
 		msg:  msg,

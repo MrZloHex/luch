@@ -84,3 +84,16 @@ func (bot *Bot) NotifyAll(text string) {
 		}
 	}
 }
+
+func (bot *Bot) NotifyAllWithMarkup(text string, markup tgbotapi.InlineKeyboardMarkup) {
+	bot.not.notifyMu.RLock()
+	defer bot.not.notifyMu.RUnlock()
+
+	for id := range bot.not.notifiers {
+		msg := tgbotapi.NewMessage(id, text)
+		msg.ReplyMarkup = markup
+		if _, err := bot.api.Send(msg); err != nil {
+			log.Error("Failed to send notify", "err", err)
+		}
+	}
+}

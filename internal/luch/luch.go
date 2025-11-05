@@ -30,6 +30,7 @@ func Init(bot *bot.Bot, ptcl *protocol.Protocol) (*Luch, error) {
 			Bot:    bot,
 		},
 		events: make(chan core.Event, 1024),
+		currPrg: core.PRG_IDLE,
 	}
 
 	return &luch, nil
@@ -47,7 +48,7 @@ func (luch *Luch) Run() {
 		case core.EV_BOT:
 			luch.updateBotPrg(ev.Bot)
 		case core.EV_WS:
-			log.Warn("Event EV_WS")
+			luch.handleWsEvent(ev)
 		}
 	}
 }
@@ -56,8 +57,22 @@ func (luch *Luch) handleCtrlEvent(ev core.Event) {
 	switch ev.Ctrl.Kind {
 	case core.SET_PRG:
 		luch.currPrg = ev.Ctrl.Prg
+		log.Info("Loading", "programme", luch.currPrg)
 		luch.startPrg(ev.Bot)
 	}
+}
+
+func (luch *Luch) handleWsEvent(ev core.Event) {
+	if ev.WS.From != "ACHTUNG" {
+		log.Warn("Got msg from unexpected address", "msg", ev.WS)
+		luch.conn.Ptcl.Transmit([]string{ev.WS.From, "ERR", "UNTRUST"})
+	}
+
+	luch.conn.Ptcl.Transmit("ACHTUNG:OK:FIRE")
+
+	luch.currPrg = core.PRG_ACHTUNG
+	log.Info("Loading", "programme", luch.currPrg)
+	luch.achtung.StartIT(luch.conn, ev.WS)
 }
 
 func (luch *Luch) startPrg(upd tgbotapi.Update) {
@@ -77,4 +92,5 @@ func (luch *Luch) updateBotPrg(upd tgbotapi.Update) {
 		luch.achtung.UpdateBot(luch.conn, upd)
 	}
 }
+
 

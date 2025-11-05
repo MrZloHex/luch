@@ -1,15 +1,21 @@
 package programmes
 
 import (
-	_ "strings"
+	"fmt"
 	log "log/slog"
 	"luch/internal/bot"
+	"luch/pkg/protocol"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Achtung struct {
 	cmd string
+	waitTimer bool
+	waitAlarm bool
+	interrupt bool
+	int_name string
 }
 
 func achtungKeyboard() tgbotapi.InlineKeyboardMarkup {
@@ -41,6 +47,21 @@ func (ach *Achtung) Start(conn Conn, upd tgbotapi.Update) error {
 	return nil
 }
 
+func (ach *Achtung) StartIT(conn Conn, upd protocol.Message) error {
+	msg := fmt.Sprintf("Fired %s", upd.Noun)
+	kb := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Stop", "STOP:TIMER"),
+		),
+	)
+
+	conn.Bot.NotifyAllWithMarkup(msg, kb)
+	ach.interrupt = true
+	ach.int_name  = upd.Args[0]
+
+	return nil
+}
+
 func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 	chatID, text, ok := bot.PickIDnTXT(upd)
 	if !ok {
@@ -48,14 +69,40 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 	}
 
 	msg := tgbotapi.NewMessage(chatID, "")
+	var err error
 
-	switch text {
-	case "NEW:TIMER":
-		msg.Text = "Send please name and duration of timer `oven 20m`"
-	case "GET:TIMER":
-		fallthrough
-	default:
-		msg.Text = "NOT IMPL"
+	if ach.waitTimer {
+		msg.Text, err = ach.newTimer(conn, text)
+		ach.waitTimer = false
+	} else if ach.interrupt {
+		switch text {
+		case "STOP:TIMER":
+			log.Info("Stopping timer", "name", ach.int_name)
+			msg.Text = "Stoping timer"
+			ach.interrupt = false
+			// TODO: maybe check if resp is ok
+			_, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG", text, ach.int_name})
+			if err != nil {
+				log.Warn("Failed to stop timer", "err", err)
+				msg.Text = "Failed to stop timer"
+				ach.interrupt = true
+			}
+		default:
+			log.Error("NOT POSSIBLE")
+		}
+	} else {
+		switch text {
+		case "NEW:TIMER":
+			msg.Text = "Send please name and duration of timer `oven 20m`"
+			ach.waitTimer = true
+		default:
+			msg.Text = "NOT IMPL"
+		}
+	}
+
+	if err != nil {
+		log.Error("Failed to process request")
+		msg.Text = "Failed"
 	}
 
 	if _, err := conn.Bot.Send(msg); err != nil {
@@ -71,20 +118,23 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 	return nil
 }
 
-/*
-func (ach *Achtung) newTimer(m Messanger, upd tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-	tim := strings.Split(upd.Message.Text, " ")
+
+func (ach *Achtung) newTimer(conn Conn, text string) (string, error) {
+	tim := strings.Split(text, " ")
 	if len(tim) < 2 {
-		msg.Text = "Please send with correct arguments"
-		m.SendBot(msg)
-		return nil
+		return "Please send with correct arguments", nil
 	}
 
-	msg.Text = m.SendWS("ACHTUNG", "SET:TIMER", tim[0], tim[1])
-	_, err := m.SendBot(msg)
-	return err
+	rx, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG:NEW:TIMER", tim[0], tim[1]})
+	if err != nil {
+		log.Warn("Failed to TxRx to achtung", "err", err)
+		return "Failed to txrx to achtung", err
+	}
+
+	log.Info("Set up new timer", "name", tim[0], "dur", tim[1])
+	return rx.String(), nil
 }
+/*
 
 func (ach *Achtung) Execute(m Messanger, upd tgbotapi.Update) error {
 	if upd.CallbackQuery != nil {

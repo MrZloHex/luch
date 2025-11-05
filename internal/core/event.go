@@ -1,6 +1,7 @@
 package core
 
 import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import "luch/pkg/protocol"
 
 type EventKind uint
 
@@ -25,5 +26,5 @@ type Event struct {
 	Kind EventKind
 	Bot  tgbotapi.Update
 	Ctrl CtrlEvent
-	WS   string
+	WS   protocol.Message
 }
