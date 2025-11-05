@@ -1,8 +1,8 @@
 package programmes
 
 import (
-	"luch/pkg/protocol"
 	"luch/internal/bot"
+	"luch/pkg/protocol"
 )
 
 type Conn struct {

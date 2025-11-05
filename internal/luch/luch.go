@@ -11,14 +11,13 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-
 type Luch struct {
 	events chan core.Event
 
 	conn programmes.Conn
 
 	currPrg core.PrgKind
-	vertex programmes.Vertex
+	vertex  programmes.Vertex
 	achtung programmes.Achtung
 	// script Scriptorium
 }
@@ -26,10 +25,10 @@ type Luch struct {
 func Init(bot *bot.Bot, ptcl *protocol.Protocol) (*Luch, error) {
 	luch := Luch{
 		conn: programmes.Conn{
-			Ptcl:   ptcl,
-			Bot:    bot,
+			Ptcl: ptcl,
+			Bot:  bot,
 		},
-		events: make(chan core.Event, 1024),
+		events:  make(chan core.Event, 1024),
 		currPrg: core.PRG_IDLE,
 	}
 
@@ -92,5 +91,3 @@ func (luch *Luch) updateBotPrg(upd tgbotapi.Update) {
 		luch.achtung.UpdateBot(luch.conn, upd)
 	}
 }
-
-

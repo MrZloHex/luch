@@ -13,6 +13,6 @@ func NewProtoEvHandler(out chan<- Event) *ProtoEvents {
 func (ev *ProtoEvents) EmitOut(msg *protocol.Message) {
 	ev.out <- Event{
 		Kind: EV_WS,
-		WS: *msg,
+		WS:   *msg,
 	}
 }

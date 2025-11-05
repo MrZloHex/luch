@@ -11,11 +11,11 @@ import (
 )
 
 type Achtung struct {
-	cmd string
+	cmd       string
 	waitTimer bool
 	waitAlarm bool
 	interrupt bool
-	int_name string
+	int_name  string
 }
 
 func achtungKeyboard() tgbotapi.InlineKeyboardMarkup {
@@ -57,7 +57,7 @@ func (ach *Achtung) StartIT(conn Conn, upd protocol.Message) error {
 
 	conn.Bot.NotifyAllWithMarkup(msg, kb)
 	ach.interrupt = true
-	ach.int_name  = upd.Args[0]
+	ach.int_name = upd.Args[0]
 
 	return nil
 }
@@ -118,7 +118,6 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 	return nil
 }
 
-
 func (ach *Achtung) newTimer(conn Conn, text string) (string, error) {
 	tim := strings.Split(text, " ")
 	if len(tim) < 2 {
@@ -134,6 +133,7 @@ func (ach *Achtung) newTimer(conn Conn, text string) (string, error) {
 	log.Info("Set up new timer", "name", tim[0], "dur", tim[1])
 	return rx.String(), nil
 }
+
 /*
 
 func (ach *Achtung) Execute(m Messanger, upd tgbotapi.Update) error {
