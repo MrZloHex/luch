@@ -14,6 +14,7 @@ type Achtung struct {
 	cmd       string
 	waitTimer bool
 	waitAlarm bool
+	waitName  bool
 	interrupt bool
 	int_name  string
 }
@@ -25,8 +26,10 @@ func achtungKeyboard() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("New Alarm", "NEW:ALARM"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Get Timers", "GET:TIMER"),
-			tgbotapi.NewInlineKeyboardButtonData("Get Alarms", "GET:ALARM"),
+			tgbotapi.NewInlineKeyboardButtonData("Get List", "GET:LIST"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Get Info", "GET:INFO"),
 		),
 	)
 }
@@ -48,10 +51,11 @@ func (ach *Achtung) Start(conn Conn, upd tgbotapi.Update) error {
 }
 
 func (ach *Achtung) StartIT(conn Conn, upd protocol.Message) error {
-	msg := fmt.Sprintf("Fired %s", upd.Noun)
+	msg := fmt.Sprintf("Fired %s __%s__", upd.Noun, upd.Args[0])
+	cmd := fmt.Sprintf("STOP:%s", upd.Noun)
 	kb := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Stop", "STOP:TIMER"),
+			tgbotapi.NewInlineKeyboardButtonData("Stop", cmd),
 		),
 	)
 
@@ -74,6 +78,12 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 	if ach.waitTimer {
 		msg.Text, err = ach.newTimer(conn, text)
 		ach.waitTimer = false
+	} else if ach.waitAlarm {
+		msg.Text, err = ach.newAlarm(conn, text)
+		ach.waitAlarm = false
+	} else if ach.waitName {
+		msg.Text, err = ach.getJob(conn, text)
+		ach.waitName = false
 	} else if ach.interrupt {
 		switch text {
 		case "STOP:TIMER":
@@ -87,6 +97,17 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 				msg.Text = "Failed to stop timer"
 				ach.interrupt = true
 			}
+		case "STOP:ALARM":
+			log.Info("Stopping alarm", "name", ach.int_name)
+			msg.Text = "Stoping alarm"
+			ach.interrupt = false
+			// TODO: maybe check if resp is ok
+			_, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG", text, ach.int_name})
+			if err != nil {
+				log.Warn("Failed to stop alarm", "err", err)
+				msg.Text = "Failed to stop alarm"
+				ach.interrupt = true
+			}
 		default:
 			log.Error("NOT POSSIBLE")
 		}
@@ -95,6 +116,24 @@ func (ach *Achtung) UpdateBot(conn Conn, upd tgbotapi.Update) error {
 		case "NEW:TIMER":
 			msg.Text = "Send please name and duration of timer `oven 20m`"
 			ach.waitTimer = true
+		case "NEW:ALARM":
+			msg.Text = "Send please name and datetime `meetup 2025.11.21 10.00`"
+			ach.waitAlarm = true
+		case "GET:INFO":
+			msg.Text = "Send please name of timer or alarm"
+			ach.waitName = true
+		case "GET:LIST":
+			rx, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG", text})
+			if err != nil {
+				log.Error("Failed to get list", "err", err)
+			}
+			for i, arg := range rx.Args {
+				if i % 2 == 0 {
+					msg.Text += fmt.Sprintf("%s: ", arg)
+				} else {
+					msg.Text += fmt.Sprintf("%s\n", arg)
+				}
+			}
 		default:
 			msg.Text = "NOT IMPL"
 		}
@@ -134,22 +173,32 @@ func (ach *Achtung) newTimer(conn Conn, text string) (string, error) {
 	return rx.String(), nil
 }
 
-/*
-
-func (ach *Achtung) Execute(m Messanger, upd tgbotapi.Update) error {
-	if upd.CallbackQuery != nil {
-		return ach.callback(m, upd)
+func (ach *Achtung) newAlarm(conn Conn, text string) (string, error) {
+	tim := strings.Split(text, " ")
+	if len(tim) < 3 {
+		return "Please send with correct arguments", nil
 	}
 
-	switch ach.cmd {
-	case "NEW:TIMER":
-		return ach.newTimer(m, upd)
-	default:
-		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, "")
-		msg.Text = "Commands for ACHTUNG:"
-		msg.ReplyMarkup = achtungMakeKB()
-		_, err := m.SendBot(msg)
-		return err
+	rx, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG:NEW:ALARM", tim[0], tim[1], tim[2]})
+	if err != nil {
+		log.Warn("Failed to TxRx to achtung", "err", err)
+		return "Failed to txrx to achtung", err
 	}
+
+	log.Info("Set up new alarm", "name", tim[0], "date", tim[1], "time", tim[2])
+	return rx.String(), nil
 }
-*/
+
+func (ach *Achtung) getJob(conn Conn, text string) (string, error) {
+	rx, err := conn.Ptcl.TransmitReceive([]string{"ACHTUNG:GET:JOB", text})
+	if err != nil {
+		log.Warn("Failed to TxRx to achtung", "err", err)
+		return "Failed to txrx to achtung", err
+	}
+
+	log.Info("JOB: ", "name", text, "time", rx.Args[0])
+	return rx.String(), nil
+
+
+}
+
