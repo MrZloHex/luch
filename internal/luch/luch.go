@@ -1,6 +1,9 @@
 package luch
 
 import (
+	"fmt"
+	"time"
+
 	"luch/internal/bot"
 	"luch/internal/core"
 	"luch/internal/programmes"
@@ -12,7 +15,8 @@ import (
 )
 
 type Luch struct {
-	events chan core.Event
+	events    chan core.Event
+	startTime time.Time
 
 	conn programmes.Conn
 
@@ -29,8 +33,9 @@ func Init(bot *bot.Bot, ptcl *protocol.Protocol) (*Luch, error) {
 			Ptcl: ptcl,
 			Bot:  bot,
 		},
-		events:  make(chan core.Event, 1024),
-		currPrg: core.PRG_IDLE,
+		events:    make(chan core.Event, 1024),
+		startTime: time.Now(),
+		currPrg:   core.PRG_IDLE,
 	}
 
 	return &luch, nil
@@ -63,6 +68,28 @@ func (luch *Luch) handleCtrlEvent(ev core.Event) {
 }
 
 func (luch *Luch) handleWsEvent(ev core.Event) {
+	// PING:PING -> PONG:PONG
+	if ev.WS.Verb == "PING" && ev.WS.Noun == "PING" {
+		luch.conn.Ptcl.Transmit(protocol.Message{
+			To:   ev.WS.From,
+			Verb: "PONG",
+			Noun: "PONG",
+		})
+		return
+	}
+
+	// GET:UPTIME
+	if ev.WS.Verb == "GET" && ev.WS.Noun == "UPTIME" {
+		uptime := int(time.Since(luch.startTime).Seconds())
+		luch.conn.Ptcl.Transmit(protocol.Message{
+			To:   ev.WS.From,
+			Verb: "OK",
+			Noun: "UPTIME",
+			Args: []string{fmt.Sprintf("%d", uptime)},
+		})
+		return
+	}
+
 	if ev.WS.From != "ACHTUNG" {
 		log.Warn("Got msg from unexpected address", "msg", ev.WS)
 		luch.conn.Ptcl.Transmit([]string{ev.WS.From, "ERR", "UNTRUST"})
